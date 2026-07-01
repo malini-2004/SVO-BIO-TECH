@@ -3,8 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/types";
-import { ShoppingCart, Heart, Star } from "lucide-react";
-import { useCartStore } from "@/store/cartStore";
+import { Heart, Star } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { toast } from "sonner";
 
@@ -12,16 +11,8 @@ export default function ProductCard({ product }: { product: Product }) {
   const isOutOfStock = product.stockQuantity === 0;
   const isLowStock = !isOutOfStock && product.stockQuantity < 10;
 
-  const addToCart = useCartStore((s) => s.addItem);
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const inWishlist = isInWishlist(product.id);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart(product, 1);
-    toast.success(`${product.name} added to cart`);
-  };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -109,19 +100,6 @@ export default function ProductCard({ product }: { product: Product }) {
               {isOutOfStock ? "Out of Stock" : isLowStock ? `Only ${product.stockQuantity} left` : "In Stock"}
             </span>
           </div>
-
-          <button
-            onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            className={`p-3 rounded-xl transition-colors shadow-sm ${
-              isOutOfStock
-                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                : "bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white"
-            }`}
-            aria-label="Add to cart"
-          >
-            <ShoppingCart size={18} />
-          </button>
         </div>
       </div>
     </div>

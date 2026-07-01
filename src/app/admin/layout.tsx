@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { LayoutDashboard, Package, ShoppingBag, MessageSquare, FileText, Settings, LogOut, Tag } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, MessageSquare, Settings, LogOut, Tag } from "lucide-react";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 
@@ -55,7 +55,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Orders", icon: ShoppingBag, href: "/admin/orders" },
     { name: "Coupons", icon: Tag, href: "/admin/coupons" },
     { name: "Reviews", icon: MessageSquare, href: "/admin/reviews" },
-    { name: "Blog Posts", icon: FileText, href: "/admin/blog" },
     { name: "Settings", icon: Settings, href: "/admin/settings" },
   ];
 

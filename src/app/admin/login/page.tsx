@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import {
+  ShieldCheck,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+
+// The designated admin email — granted admin access automatically
+const ADMIN_EMAIL = "admin@gmail.com";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -33,26 +48,66 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
+      // ── Step 1: Try to sign in ──────────────────────────────────────
+      let credential;
+      try {
+        credential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (signInErr: any) {
+        const code = signInErr.code as string;
 
-      // Force refresh the token to get the latest custom claims
-      const tokenResult = await credential.user.getIdTokenResult(true);
-
-      if (!tokenResult.claims.admin) {
-        // Not an admin — sign them out immediately
-        await signOut(auth);
-        setError("This account does not have admin privileges. Contact your super admin.");
-        return;
+        // If admin@gmail.com doesn't exist yet, create it automatically
+        if (
+          email.toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
+          (code === "auth/user-not-found" ||
+            code === "auth/invalid-credential" ||
+            code === "auth/invalid-email")
+        ) {
+          try {
+            credential = await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+          } catch (createErr: any) {
+            throw createErr; // re-throw so the outer catch handles it
+          }
+        } else {
+          throw signInErr; // re-throw so the outer catch handles it
+        }
       }
 
-      // All good — redirect
+      // ── Step 2: Privilege check ────────────────────────────────────
+      const isDesignatedAdmin =
+        credential.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+      if (!isDesignatedAdmin) {
+        // For non-admin accounts, still verify custom claims
+        const tokenResult = await credential.user.getIdTokenResult(true);
+        if (!tokenResult.claims.admin) {
+          await signOut(auth);
+          setError(
+            "This account does not have admin privileges. Contact your super admin."
+          );
+          return;
+        }
+      }
+
+      // ── Step 3: All good — redirect ───────────────────────────────
       router.push(redirectTo);
     } catch (err: any) {
-      const code = err.code;
-      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+      const code = err.code as string;
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
+      ) {
         setError("Invalid email or password. Please try again.");
       } else if (code === "auth/too-many-requests") {
-        setError("Too many failed attempts. Please wait a moment and try again.");
+        setError(
+          "Too many failed attempts. Please wait a moment and try again."
+        );
+      } else if (code === "auth/network-request-failed") {
+        setError("Network error. Please check your internet connection.");
       } else {
         setError(err.message || "Login failed. Please try again.");
       }
@@ -91,7 +146,9 @@ export default function AdminLoginPage() {
               <ShieldCheck size={28} className="text-white" />
             </div>
             <h1 className="text-xl font-bold text-white">Admin Control Panel</h1>
-            <p className="text-primary-200 text-sm mt-1">SVO Bio Tech — Restricted Access</p>
+            <p className="text-primary-200 text-sm mt-1">
+              SPR Bio Tech — Restricted Access
+            </p>
           </div>
 
           {/* Form */}
@@ -110,7 +167,10 @@ export default function AdminLoginPage() {
                   Admin Email
                 </label>
                 <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Mail
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"
+                  />
                   <input
                     id="admin-email"
                     type="email"
@@ -118,7 +178,7 @@ export default function AdminLoginPage() {
                     autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@svobiotech.com"
+                    placeholder="admin@gmail.com"
                     className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                   />
                 </div>
@@ -130,7 +190,10 @@ export default function AdminLoginPage() {
                   Password
                 </label>
                 <div className="relative">
-                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Lock
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"
+                  />
                   <input
                     id="admin-password"
                     type={showPassword ? "text" : "password"}

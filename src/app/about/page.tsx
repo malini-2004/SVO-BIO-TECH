@@ -15,14 +15,6 @@ const TEAM = [
   { name: "Arun Selvaraj", role: "Operations Director", initials: "AS", color: "bg-amber-600", bio: "Manages end-to-end supply chain, quality control, and pan-India distribution network." },
 ];
 
-const MILESTONES = [
-  { year: "2010", title: "Company Founded", desc: "SPR Biotech established in Coimbatore with a focus on eco-friendly fertilizer production." },
-  { year: "2013", title: "FCO Certification", desc: "Received Fertiliser Control Order approval for all core product lines." },
-  { year: "2016", title: "ISO 9001:2015", desc: "Achieved ISO certification for quality management systems." },
-  { year: "2019", title: "Pan-India Launch", desc: "Expanded distribution to all 28 states through direct farmer outreach." },
-  { year: "2022", title: "10,000 Farmers", desc: "Crossed the milestone of 10,000 active farmer customers across India." },
-  { year: "2026", title: "E-Commerce Launch", desc: "Launched direct-to-farmer online store for doorstep delivery across India." },
-];
 
 const VALUES = [
   { icon: Leaf, title: "Sustainability", desc: "Every product is designed to improve soil health over the long term, not just deliver short-term yield boosts." },
@@ -143,34 +135,6 @@ export default function AboutPage() {
                 <p className="text-gray-500 text-sm leading-relaxed">{v.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── MILESTONES ─── */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center mb-12">
-            <p className="text-primary-600 font-semibold text-sm uppercase tracking-widest mb-3">Our Journey</p>
-            <h2 className="text-3xl font-black text-gray-900">Key Milestones</h2>
-          </div>
-          <div className="relative">
-            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-primary-100 -translate-x-1/2 hidden md:block" />
-            <div className="space-y-8">
-              {MILESTONES.map((m, i) => (
-                <div key={m.year} className={`flex gap-6 items-start ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}>
-                  <div className={`flex-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm ${i % 2 !== 0 ? "md:text-right" : ""}`}>
-                    <span className="text-xs font-black text-primary-600 uppercase tracking-widest">{m.year}</span>
-                    <h3 className="font-black text-gray-900 mt-1 mb-2">{m.title}</h3>
-                    <p className="text-gray-500 text-sm">{m.desc}</p>
-                  </div>
-                  <div className="hidden md:flex flex-shrink-0 w-10 h-10 bg-primary-600 rounded-full items-center justify-center shadow-md relative z-10">
-                    <CheckCircle2 size={20} className="text-white" />
-                  </div>
-                  <div className="flex-1 hidden md:block" />
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getProducts } from "@/lib/firebase/products";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
+import HeroSlider from "@/components/layout/HeroSlider";
 import {
   ArrowRight, Leaf, Award, Truck, Shield, Star,
-  CheckCircle2, Users, Package, MapPin, ChevronRight, ChevronDown,
-  FlaskConical, Sprout, Droplets, SlidersHorizontal
+  CheckCircle2, Users, Package, MapPin, ChevronRight,
+  Quote, ChevronLeft
 } from "lucide-react";
 
 const MOCK_PRODUCTS: Product[] = [
@@ -119,7 +120,7 @@ const REVIEWS = [
     text: "SPR NPK 19:19:19 has transformed my paddy fields. Yield increased by nearly 40% in two seasons. The water-soluble formula mixes instantly and the results are visible within days.",
     crop: "Paddy",
     initials: "RK",
-    color: "bg-green-600"
+    gradient: "from-green-500 to-emerald-700",
   },
   {
     name: "Priya Devi",
@@ -128,7 +129,7 @@ const REVIEWS = [
     text: "The neem cake is genuinely organic and works wonders. No more aphid or whitefly problems. My tomato and brinjal crops are completely pest-free and the soil feels healthier.",
     crop: "Vegetables",
     initials: "PD",
-    color: "bg-amber-600"
+    gradient: "from-amber-500 to-orange-600",
   },
   {
     name: "Suresh Patel",
@@ -137,16 +138,28 @@ const REVIEWS = [
     text: "Fast delivery and authentic products — that's what I love about SPR Biotech. The seaweed extract gave my cotton plants amazing vigour and the boll setting improved significantly.",
     crop: "Cotton",
     initials: "SP",
-    color: "bg-blue-600"
+    gradient: "from-blue-500 to-indigo-700",
+  },
+  {
+    name: "Anitha Rajan",
+    role: "Banana Grower, Kerala",
+    rating: 5,
+    text: "The Humic Acid granules made an incredible difference in my banana plantation. Bunch weight increased and fruit quality improved visibly. I recommend SPR Biotech to every farmer I meet.",
+    crop: "Banana",
+    initials: "AR",
+    gradient: "from-yellow-500 to-amber-600",
+  },
+  {
+    name: "Mohan Das",
+    role: "Wheat Farmer, Punjab",
+    rating: 5,
+    text: "Trichoderma Bio-Fungicide saved my wheat crop from root rot this season. Very effective, totally organic and the customer support team was extremely helpful throughout.",
+    crop: "Wheat",
+    initials: "MD",
+    gradient: "from-rose-500 to-pink-700",
   },
 ];
 
-const CATEGORIES = [
-  { name: "Fertilizers", icon: FlaskConical, desc: "NPK, Micronutrients & more", href: "/products?category=Fertilizers", color: "bg-green-50 text-green-700 border-green-100" },
-  { name: "Organic", icon: Leaf, desc: "Neem, Compost & natural inputs", href: "/products?category=Organic", color: "bg-amber-50 text-amber-700 border-amber-100" },
-  { name: "Bio-Stimulants", icon: Sprout, desc: "Seaweed, Trichoderma & more", href: "/products?category=Bio-Stimulants", color: "bg-teal-50 text-teal-700 border-teal-100" },
-  { name: "Liquid Inputs", icon: Droplets, desc: "Foliar sprays & drip solutions", href: "/products?formType=Liquid", color: "bg-blue-50 text-blue-700 border-blue-100" },
-];
 
 function StarRating({ count }: { count: number }) {
   return (
@@ -155,6 +168,158 @@ function StarRating({ count }: { count: number }) {
         <Star key={i} size={14} className={i < count ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"} />
       ))}
     </div>
+  );
+}
+
+function TestimonialsSection() {
+  const [active, setActive] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = () => {
+    intervalRef.current = setInterval(() => {
+      setActive((c) => (c + 1) % REVIEWS.length);
+    }, 4000);
+  };
+
+  useEffect(() => {
+    startTimer();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const go = (idx: number) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setActive(idx);
+    startTimer();
+  };
+
+  const prev = () => go((active - 1 + REVIEWS.length) % REVIEWS.length);
+  const next = () => go((active + 1) % REVIEWS.length);
+
+  const review = REVIEWS[active];
+
+  return (
+    <section className="py-20 bg-gradient-to-br from-[#052e16] via-[#0d4a24] to-[#052e16] overflow-hidden relative">
+      {/* Decorative blobs */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-green-400/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#f89c3a]/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
+
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+        {/* Heading */}
+        <div className="text-center mb-14">
+          <p className="text-[#f89c3a] font-semibold text-sm uppercase tracking-widest mb-3">What Farmers Say</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Customer Testimonials</h2>
+          <p className="text-green-200 max-w-lg mx-auto text-sm leading-relaxed">
+            Trusted by 10,000+ farmers across India. Real results from real fields.
+          </p>
+          {/* Overall rating bar */}
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <div className="flex gap-1">
+              {[1,2,3,4,5].map(i => <Star key={i} size={18} className="fill-amber-400 text-amber-400" />)}
+            </div>
+            <span className="text-white font-black text-lg">4.9</span>
+            <span className="text-green-300 text-sm">/ 5.0 &nbsp;·&nbsp; 2,400+ reviews</span>
+          </div>
+        </div>
+
+        {/* Main card */}
+        <div className="relative">
+          <div
+            key={active}
+            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12 max-w-3xl mx-auto"
+            style={{ animation: "testimonialFade 0.5s ease both" }}
+          >
+            {/* Quote icon */}
+            <div className="mb-6">
+              <Quote size={36} className="text-[#f89c3a]/60" />
+            </div>
+
+            {/* Stars */}
+            <div className="flex gap-1 mb-5">
+              {[1,2,3,4,5].map(i => <Star key={i} size={20} className="fill-amber-400 text-amber-400" />)}
+            </div>
+
+            {/* Review text */}
+            <blockquote className="text-white text-lg md:text-xl font-medium leading-relaxed mb-8">
+              &ldquo;{review.text}&rdquo;
+            </blockquote>
+
+            {/* Author */}
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${review.gradient} flex items-center justify-center text-white font-black text-lg shadow-lg flex-shrink-0`}>
+                {review.initials}
+              </div>
+              <div>
+                <p className="text-white font-bold text-base">{review.name}</p>
+                <p className="text-green-300 text-sm">{review.role}</p>
+              </div>
+              <span className="ml-auto bg-[#f89c3a]/20 border border-[#f89c3a]/30 text-[#f89c3a] text-xs font-bold px-3 py-1.5 rounded-full">
+                🌾 {review.crop}
+              </span>
+            </div>
+          </div>
+
+          {/* Arrows */}
+          <button
+            onClick={prev}
+            className="absolute left-0 md:-left-16 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:scale-110"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-0 md:-right-16 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:scale-110"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Dots */}
+        <div className="flex justify-center gap-2 mt-8">
+          {REVIEWS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i)}
+              className="transition-all duration-300"
+              aria-label={`Testimonial ${i + 1}`}
+            >
+              <span className={`block rounded-full transition-all duration-300 ${
+                i === active ? "w-7 h-2 bg-[#f89c3a]" : "w-2 h-2 bg-white/25 hover:bg-white/50"
+              }`} />
+            </button>
+          ))}
+        </div>
+
+        {/* Mini cards row */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-12">
+          {REVIEWS.map((r, i) => (
+            <button
+              key={r.name}
+              onClick={() => go(i)}
+              className={`text-left p-4 rounded-2xl border transition-all duration-300 ${
+                i === active
+                  ? "bg-white/10 border-[#f89c3a]/50 shadow-lg shadow-[#f89c3a]/10"
+                  : "bg-white/5 border-white/10 hover:bg-white/8"
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${r.gradient} flex items-center justify-center text-white font-bold text-xs mb-2`}>
+                {r.initials}
+              </div>
+              <p className="text-white text-xs font-semibold leading-tight">{r.name}</p>
+              <p className="text-green-400 text-[10px] mt-0.5">{r.crop}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes testimonialFade {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </section>
   );
 }
 
@@ -197,298 +362,8 @@ export default function Home() {
   return (
     <div className="bg-white">
 
-      {/* ─── HERO (3-Column Editorial · Desktop) ──────────────────── */}
-      <section
-        className="relative overflow-hidden bg-[#f4ecd8] hidden md:flex"
-        style={{ height: 'calc(100vh - 80px)', minHeight: '600px' }}
-      >
-        {/* Right dark-green panel extending to viewport edge */}
-        <div className="absolute right-0 top-0 bottom-0 w-[35%] bg-[#126b3a]" />
-
-        {/* Thin vertical dividers */}
-        <div className="absolute top-0 bottom-0 left-[27%] w-px bg-[#052c22]/10 z-10 hidden xl:block" />
-        <div className="absolute top-0 bottom-0 left-[65%] w-px bg-[#052c22]/10 z-10 hidden xl:block" />
-
-        <div className="relative z-10 flex w-full h-full">
-
-          {/* ── LEFT: Brand + Filters ── */}
-          <div className="w-[26%] h-full flex flex-col py-14 pl-8 xl:pl-12 pr-6 border-r border-[#052c22]/10 overflow-hidden">
-
-            {/* Brand logo */}
-            <div className="mb-10 relative select-none">
-              <p className="text-[#f89c3a] text-[10px] font-black uppercase tracking-[0.18em] mb-0.5 pl-0.5">
-                India&apos;s Premium
-              </p>
-              <h1
-                style={{ fontFamily: 'Georgia, "Times New Roman", serif', lineHeight: 0.85 }}
-                className="text-[#052c22] font-black italic tracking-tighter"
-              >
-                <span className="text-[clamp(2.8rem,4vw,4.8rem)]">SPR</span><br />
-                <span className="text-[clamp(2.8rem,4vw,4.8rem)]">Bio</span>
-              </h1>
-              <span
-                style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive", lineHeight: 1 }}
-                className="text-[#f89c3a] text-[clamp(2rem,3vw,3.4rem)] block pl-3 -mt-1 -rotate-3 transform"
-              >
-                tech
-              </span>
-              <div className="mt-4 flex items-center gap-1 opacity-25">
-                <div className="h-px w-8 bg-[#052c22]" />
-                <div className="h-px w-5 bg-[#052c22]" />
-                <div className="h-px w-2 bg-[#052c22]" />
-              </div>
-            </div>
-
-            {/* Filter button */}
-            <Link
-              href="/products"
-              className="flex items-center gap-2 text-[#052c22] font-black text-xs mb-7 hover:text-[#f89c3a] transition-colors w-fit uppercase tracking-widest"
-            >
-              <SlidersHorizontal size={14} strokeWidth={3} />
-              Filter Products
-              <ChevronRight size={12} className="opacity-40" />
-            </Link>
-
-            {/* Shop By heading */}
-            <div className="mb-5">
-              <h2 className="text-[#052c22] font-black text-xs uppercase tracking-[0.18em] border-b-2 border-[#052c22] pb-1.5 inline-block pr-6">
-                Shop By
-              </h2>
-            </div>
-
-            {/* Filter list */}
-            <ul className="space-y-4 flex-1 overflow-hidden">
-              {[
-                { label: 'Fertilizers',    href: '/products?category=Fertilizers' },
-                { label: 'Organic',        href: '/products?category=Organic' },
-                { label: 'Bio-Stimulants', href: '/products?category=Bio-Stimulants' },
-                { label: 'Pesticides',     href: '/products?category=Pesticides' },
-                { label: 'Seeds & Inputs', href: '/products' },
-                { label: 'Special Offers', href: '/products' },
-              ].map(({ label, href }) => (
-                <li key={label}>
-                  <Link href={href} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-[#f89c3a] shrink-0 group-hover:scale-125 transition-transform" />
-                      <span
-                        style={{ fontFamily: 'Georgia, serif' }}
-                        className="text-[#052c22] font-bold italic text-[clamp(0.9rem,1.3vw,1.2rem)] group-hover:text-[#f89c3a] transition-colors"
-                      >
-                        {label}
-                      </span>
-                    </div>
-                    <div className="w-6 h-6 rounded-full border-2 border-[#052c22]/35 flex items-center justify-center group-hover:bg-[#052c22] group-hover:border-[#052c22] transition-all shrink-0">
-                      <ChevronRight size={11} className="text-[#052c22]/50 group-hover:text-white transition-colors" />
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* ── MIDDLE: 2×2 Product Grid ── */}
-          <div className="w-[39%] h-full py-14 px-5 border-r border-[#052c22]/10">
-            <div className="grid grid-cols-2 gap-4 h-full">
-
-              {/* Card 1 — NPK 19:19:19 */}
-              <Link href="/products/spr-premium-npk-19-19-19" className="bg-white shadow hover:shadow-lg transition-shadow relative group flex flex-col overflow-hidden">
-                <span className="absolute top-3 left-3 z-10 bg-[#f89c3a] text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-wide">
-                  Newest
-                </span>
-                <div className="flex-1 overflow-hidden min-h-0 bg-stone-100">
-                  <img
-                    src="https://images.unsplash.com/photo-1628543105315-977ba2e0964c?w=600&q=80"
-                    alt="NPK Fertilizer granules"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 shrink-0 flex items-end justify-between">
-                  <div>
-                    <h3 style={{ fontFamily: 'Georgia, serif' }} className="text-[#052c22] font-black text-sm italic">NPK 19:19:19</h3>
-                    <p className="text-[#052c22]/50 text-[11px] mt-0.5">Water Soluble Fertilizer</p>
-                  </div>
-                  <div className="w-7 h-7 bg-[#052c22] rounded-full flex items-center justify-center shrink-0 group-hover:bg-[#f89c3a] transition-colors">
-                    <ArrowRight size={12} className="text-white" />
-                  </div>
-                </div>
-              </Link>
-
-              {/* Card 2 — Neem Cake */}
-              <Link href="/products/spr-organic-neem-khali" className="bg-white shadow hover:shadow-lg transition-shadow relative group flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-hidden min-h-0 bg-stone-100">
-                  <img
-                    src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c6c8c?w=600&q=80"
-                    alt="Neem Cake organic fertilizer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 shrink-0 flex items-end justify-between">
-                  <div>
-                    <h3 style={{ fontFamily: 'Georgia, serif' }} className="text-[#052c22] font-black text-sm italic">Neem Cake</h3>
-                    <p className="text-[#052c22]/50 text-[11px] mt-0.5">Organic Pest Repellent</p>
-                  </div>
-                  <div className="w-7 h-7 bg-[#052c22] rounded-full flex items-center justify-center shrink-0 group-hover:bg-[#f89c3a] transition-colors">
-                    <ArrowRight size={12} className="text-white" />
-                  </div>
-                </div>
-              </Link>
-
-              {/* Card 3 — Seaweed Extract */}
-              <Link href="/products/seaweed-liquid-extract" className="bg-white shadow hover:shadow-lg transition-shadow relative group flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-hidden min-h-0 bg-stone-100">
-                  <img
-                    src="https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=600&q=80"
-                    alt="Seaweed liquid extract"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 shrink-0 flex items-end justify-between">
-                  <div>
-                    <h3 style={{ fontFamily: 'Georgia, serif' }} className="text-[#052c22] font-black text-sm italic">Seaweed Extract</h3>
-                    <p className="text-[#052c22]/50 text-[11px] mt-0.5">Bio-Stimulant Liquid</p>
-                  </div>
-                  <div className="w-7 h-7 bg-[#052c22] rounded-full flex items-center justify-center shrink-0 group-hover:bg-[#f89c3a] transition-colors">
-                    <ArrowRight size={12} className="text-white" />
-                  </div>
-                </div>
-              </Link>
-
-              {/* Card 4 — Humic Acid */}
-              <Link href="/products/humic-acid-98-granules" className="bg-white shadow hover:shadow-lg transition-shadow relative group flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-hidden min-h-0 bg-stone-100">
-                  <img
-                    src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80"
-                    alt="Humic acid soil conditioner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 shrink-0 flex items-end justify-between relative">
-                  <div>
-                    <h3 style={{ fontFamily: 'Georgia, serif' }} className="text-[#052c22] font-black text-sm italic">Humic Acid 98%</h3>
-                    <p className="text-[#052c22]/50 text-[11px] mt-0.5">Soil Conditioner</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#f89c3a] text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-wide">Newest</span>
-                    <div className="w-7 h-7 bg-[#052c22] rounded-full flex items-center justify-center shrink-0 group-hover:bg-[#f89c3a] transition-colors">
-                      <ArrowRight size={12} className="text-white" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-            </div>
-          </div>
-
-          {/* ── RIGHT: Featured Product Card ── */}
-          <div className="w-[35%] h-full py-14 pl-6 pr-8 flex flex-col relative">
-            <div className="bg-white shadow-2xl flex flex-col flex-1 overflow-hidden relative">
-
-              {/* Product image */}
-              <div className="relative overflow-visible shrink-0" style={{ height: '45%' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&q=80"
-                  alt="Featured product — lush farm field"
-                  className="w-full h-full object-cover"
-                />
-                {/* Circular off-badge */}
-                <div className="absolute -bottom-9 right-6 w-[4.5rem] h-[4.5rem] bg-[#f89c3a] rounded-full flex flex-col items-center justify-center shadow-lg z-20">
-                  <span
-                    style={{ fontFamily: 'Georgia, serif' }}
-                    className="text-white text-xl font-black italic leading-none"
-                  >25%</span>
-                  <span className="text-white text-[9px] font-black uppercase tracking-widest">OFF</span>
-                </div>
-              </div>
-
-              {/* Card content */}
-              <div className="px-7 pt-10 pb-7 flex flex-col flex-1 overflow-hidden">
-                <p className="text-[#f89c3a] text-[9px] font-black uppercase tracking-[0.18em] mb-1.5">★ Top Seller</p>
-                <h2
-                  style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-                  className="text-[#052c22] text-xl font-black italic leading-tight mb-2"
-                >
-                  NPK 19:19:19<br />Water Soluble
-                </h2>
-                <p className="text-[#052c22]/55 text-xs leading-relaxed mb-4 line-clamp-2">
-                  India&apos;s most trusted balanced fertilizer. Perfect for drip irrigation &amp; foliar spray across all crops.
-                </p>
-
-                {/* Price */}
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="text-[#f89c3a] text-sm font-black line-through">₹600</span>
-                  <span
-                    style={{ fontFamily: 'Georgia, serif' }}
-                    className="text-[#052c22] text-[1.8rem] font-black italic leading-none"
-                  >₹450</span>
-                </div>
-
-                {/* Weight selector */}
-                <div className="mb-5">
-                  <p className="text-[#f89c3a] text-[9px] font-black uppercase tracking-[0.18em] mb-2">Weight</p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {['500g', '1 kg', '5 kg', '25 kg'].map((w, i) => (
-                      <span
-                        key={w}
-                        className={`px-2.5 py-1 text-[10px] font-black rounded-full border transition-colors cursor-pointer ${
-                          i === 1
-                            ? 'bg-[#052c22] text-white border-[#052c22]'
-                            : 'bg-transparent border-[#052c22]/25 text-[#052c22] hover:bg-[#052c22] hover:text-white hover:border-[#052c22]'
-                        }`}
-                      >{w}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <Link
-                  href="/products/spr-premium-npk-19-19-19"
-                  className="mt-auto bg-[#f89c3a] hover:bg-[#d97b1c] text-white font-black text-xs py-3 flex items-center justify-center gap-2 transition-colors uppercase tracking-widest"
-                >
-                  Shop Now <ArrowRight size={13} />
-                </Link>
-              </div>
-            </div>
-
-            {/* Scroll down hint */}
-            <button
-              className="absolute bottom-5 right-5 w-9 h-9 rounded-full border-2 border-[#f4ecd8]/35 flex items-center justify-center hover:border-[#f4ecd8]/70 transition-colors"
-              aria-label="Scroll down"
-              onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
-            >
-              <ChevronDown size={16} className="text-[#f4ecd8]/60" />
-            </button>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ─── HERO (Mobile fallback) ────────────────────────────────── */}
-      <section className="md:hidden bg-[#052c22] py-16 px-5 text-center overflow-hidden relative">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-[#f89c3a]/10 rounded-full" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-white/5 rounded-full" />
-        <div className="relative z-10">
-          <p className="text-[#f89c3a] text-[10px] font-black uppercase tracking-[0.18em] mb-4">India&apos;s Premium Bio-Fertilizers</p>
-          <h1
-            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-            className="text-white text-6xl font-black italic leading-none mb-0"
-          >SPR</h1>
-          <span
-            style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive" }}
-            className="text-[#f89c3a] text-5xl block mb-6"
-          >Biotech</span>
-          <p className="text-green-200 max-w-xs mx-auto mb-8 text-sm leading-relaxed">
-            Premium bio-fertilizers &amp; organic inputs trusted by 10,000+ farmers across India.
-          </p>
-          <div className="flex flex-col gap-3 max-w-xs mx-auto">
-            <Link href="/products" className="bg-[#f89c3a] text-white font-bold py-4 flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
-              Shop Products <ArrowRight size={16} />
-            </Link>
-            <Link href="/about" className="border-2 border-white/25 text-white font-bold py-4 text-sm">
-              About Us
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ─── HERO SLIDER ────────────────────────────────────────────── */}
+      <HeroSlider />
 
       {/* ─── STATS BAR ─────────────────────────────────────── */}
       <section className="bg-primary-800 text-white">
@@ -505,36 +380,6 @@ export default function Home() {
                 <span className="text-2xl font-black">{stat.value}</span>
                 <span className="text-green-200 text-sm">{stat.label}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SHOP BY CATEGORY ──────────────────────────────── */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p className="text-primary-600 font-semibold text-sm uppercase tracking-widest mb-2">Browse</p>
-              <h2 className="text-3xl font-black text-gray-900">Shop by Category</h2>
-            </div>
-            <Link href="/products" className="hidden sm:flex items-center gap-1 text-primary-600 font-semibold hover:text-primary-800 transition text-sm">
-              All Products <ChevronRight size={16} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.name}
-                href={cat.href}
-                className={`border rounded-2xl p-6 flex flex-col items-center text-center hover:shadow-md transition-all group ${cat.color}`}
-              >
-                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                  <cat.icon size={26} />
-                </div>
-                <h3 className="font-bold text-base mb-1">{cat.name}</h3>
-                <p className="text-xs opacity-75">{cat.desc}</p>
-              </Link>
             ))}
           </div>
         </div>
@@ -563,20 +408,6 @@ export default function Home() {
               View All Products <ArrowRight size={18} />
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ─── PROMOTIONAL BANNER ────────────────────────────── */}
-      <section className="bg-gradient-to-r from-amber-500 to-amber-600 py-12">
-        <div className="container mx-auto px-4 max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <div className="text-white">
-            <p className="text-amber-100 font-semibold text-sm uppercase tracking-widest mb-2">Limited Time</p>
-            <h2 className="text-3xl font-black">Free Shipping on Orders Above ₹1000</h2>
-            <p className="text-amber-100 mt-2">Valid on all products. No coupon code required.</p>
-          </div>
-          <Link href="/products" className="flex-shrink-0 bg-white text-amber-700 font-bold px-8 py-4 rounded-xl hover:bg-amber-50 transition shadow-lg flex items-center gap-2">
-            Shop Now <ArrowRight size={18} />
-          </Link>
         </div>
       </section>
 
@@ -674,38 +505,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── CUSTOMER REVIEWS ──────────────────────────────── */}
-      <section className="py-16 bg-primary-50">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center mb-12">
-            <p className="text-primary-600 font-semibold text-sm uppercase tracking-widest mb-3">Testimonials</p>
-            <h2 className="text-3xl font-black text-gray-900">What Our Farmers Say</h2>
-            <p className="text-gray-500 mt-3 max-w-xl mx-auto">Real results from real farmers across India who trust SPR Biotech for their crop nutrition needs.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {REVIEWS.map((review) => (
-              <div key={review.name} className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 flex flex-col">
-                <StarRating count={review.rating} />
-                <blockquote className="text-gray-700 leading-relaxed my-5 flex-grow text-sm">
-                  &ldquo;{review.text}&rdquo;
-                </blockquote>
-                <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
-                  <div className={`w-10 h-10 ${review.color} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                    {review.initials}
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">{review.name}</p>
-                    <p className="text-gray-500 text-xs">{review.role}</p>
-                  </div>
-                  <span className="ml-auto text-xs font-semibold bg-primary-50 text-primary-700 px-2 py-1 rounded-full border border-primary-100">
-                    {review.crop}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ─── CUSTOMER TESTIMONIALS ────────────────────────────────── */}
+      <TestimonialsSection />
 
       {/* ─── TRUST BADGES ──────────────────────────────────── */}
       <section className="py-12 bg-white border-y border-gray-100">

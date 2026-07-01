@@ -21,14 +21,13 @@ export default function Header() {
   const navLinks = [
     { href: "/products", label: "Products" },
     { href: "/about", label: "About Us" },
-    { href: "/blog", label: "Blog" },
   ];
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
       {/* Top Bar */}
       <div className="bg-primary-800 text-white text-center py-2 text-xs font-medium tracking-wide hidden sm:block">
-        Free shipping on orders above ₹1000 &nbsp;|&nbsp; 100% Genuine Products &nbsp;|&nbsp; Call: +91 98765 43210
+        100% Genuine Products &nbsp;|&nbsp; Call: +91 98765 43210
       </div>
 
       <div className="container mx-auto px-4">
@@ -39,7 +38,7 @@ export default function Header() {
               <Leaf className="text-white" size={20} />
             </div>
             <div className="leading-tight">
-              <span className="text-xl font-black text-primary-900 tracking-tight block">SPR<span className="text-primary-600">Biotech</span></span>
+              <span className="text-xl font-black text-primary-900 tracking-tight block">SVO<span className="text-primary-600">Biotech</span></span>
               <span className="text-[9px] font-semibold text-gray-400 tracking-widest uppercase block -mt-0.5">Bio Fertilizers</span>
             </div>
           </Link>
@@ -50,11 +49,10 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-semibold transition-colors ${
-                  pathname === link.href
+                className={`text-sm font-semibold transition-colors ${pathname === link.href
                     ? "text-primary-700 border-b-2 border-primary-600 pb-0.5"
                     : "text-gray-600 hover:text-primary-700"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -97,11 +95,11 @@ export default function Header() {
               )}
             </Link>
             <Link
-              href={user ? "/profile" : "/login"}
+              href="/admin/login"
               className="flex items-center gap-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition"
             >
               <User size={16} />
-              {user ? "My Account" : "Login"}
+              Admin
             </Link>
           </div>
 
@@ -178,11 +176,11 @@ export default function Header() {
             )}
           </Link>
           <Link
-            href={user ? "/profile" : "/login"}
+            href="/admin/login"
             className="mt-2 w-full text-center bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition"
             onClick={() => setMobileMenuOpen(false)}
           >
-            {user ? "My Account" : "Login / Sign Up"}
+            Admin Login
           </Link>
         </div>
       )}

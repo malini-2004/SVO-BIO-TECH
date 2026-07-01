@@ -4,6 +4,10 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
+// The designated admin email — any user signing in with this address
+// is granted admin privileges automatically (no custom claim required).
+const ADMIN_EMAIL = "admin@gmail.com";
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -26,20 +30,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      
+
       if (currentUser) {
-        // Get custom claims to check if admin
-        const idTokenResult = await currentUser.getIdTokenResult();
-        setIsAdmin(!!idTokenResult.claims.admin);
-        
+        // Grant admin if the email matches the designated admin account
+        if (currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          setIsAdmin(true);
+        } else {
+          // Otherwise check custom claims
+          try {
+            const idTokenResult = await currentUser.getIdTokenResult();
+            setIsAdmin(!!idTokenResult.claims.admin);
+          } catch {
+            setIsAdmin(false);
+          }
+        }
+
         // Set cookie for middleware
-        const token = await currentUser.getIdToken();
-        document.cookie = `auth_token=${token}; path=/; max-age=3600; SameSite=Strict; Secure`;
+        try {
+          const token = await currentUser.getIdToken();
+          document.cookie = `auth_token=${token}; path=/; max-age=3600; SameSite=Strict`;
+        } catch {
+          // ignore cookie errors on server-side renders
+        }
       } else {
         setIsAdmin(false);
-        document.cookie = `auth_token=; path=/; max-age=0; SameSite=Strict; Secure`;
+        try {
+          document.cookie = `auth_token=; path=/; max-age=0; SameSite=Strict`;
+        } catch {
+          // ignore
+        }
       }
-      
+
       setLoading(false);
     });
 

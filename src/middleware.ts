@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const authToken = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
@@ -10,15 +10,31 @@ export function proxy(request: NextRequest) {
   
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  // If user is trying to access a protected route without a token, redirect to login
+  // ⚠️ The /admin/login route should be accessible without a token
+  if (pathname.startsWith('/admin/login')) {
+    if (authToken) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // If user is trying to access a protected route without a token, redirect to appropriate login
   if (isProtectedRoute && !authToken) {
+    // If it's an admin route, redirect to admin login
+    if (pathname.startsWith('/admin')) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Otherwise redirect to standard login (even if it doesn't exist yet, it's the correct path)
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // If user is logged in and tries to access login/signup, redirect to home
-  if ((pathname.startsWith('/login') || pathname.startsWith('/signup')) && authToken) {
+  // If user is logged in and tries to access standard login/signup, redirect to home
+  if ((pathname === '/login' || pathname === '/signup') && authToken) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

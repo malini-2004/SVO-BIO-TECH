@@ -39,7 +39,7 @@ export default function ProfilePage() {
         <ShieldCheck size={64} className="text-gray-300 mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
         <p className="text-gray-500 mb-6">Please log in to view your profile and saved addresses.</p>
-        <Link href="/login" className="bg-primary-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-primary-700 transition">
+        <Link href="/admin/login" className="bg-primary-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-primary-700 transition">
           Login Now
         </Link>
       </div>
@@ -94,9 +94,6 @@ export default function ProfilePage() {
               <div className="p-2">
                 <Link href="/profile" className="flex items-center gap-3 p-3 rounded-xl bg-primary-50 text-primary-700 font-bold mb-1">
                   <User size={20} /> Personal Info
-                </Link>
-                <Link href="/profile/orders" className="flex items-center gap-3 p-3 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium mb-1 transition">
-                  <ShieldCheck size={20} /> My Orders
                 </Link>
               </div>
             </div>

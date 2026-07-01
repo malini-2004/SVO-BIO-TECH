@@ -79,7 +79,6 @@ const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-const CATEGORIES = ["Fertilizers", "Organic", "Bio-Stimulants", "Pesticides", "Seeds"];
 const FORM_TYPES = ["Granular", "Liquid", "Powder"];
 const SORT_OPTIONS = [
   { value: "best_selling", label: "Best Selling" },
@@ -113,7 +112,6 @@ export default function ProductsPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedForms, setSelectedForms] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(5000);
@@ -122,9 +120,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     // Pre-apply URL query params
-    const cat = searchParams.get("category");
     const form = searchParams.get("formType");
-    if (cat) setSelectedCategories([cat]);
     if (form) setSelectedForms([form]);
   }, [searchParams]);
 
@@ -144,13 +140,8 @@ export default function ProductsPage() {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.shortDescription?.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
           p.tags?.some((t) => t.toLowerCase().includes(q))
       );
-    }
-
-    if (selectedCategories.length > 0) {
-      list = list.filter((p) => selectedCategories.includes(p.category));
     }
 
     if (selectedForms.length > 0) {
@@ -172,28 +163,20 @@ export default function ProductsPage() {
     });
 
     return list;
-  }, [allProducts, search, selectedCategories, selectedForms, priceMin, priceMax, inStockOnly, sortBy]);
+  }, [allProducts, search, selectedForms, priceMin, priceMax, inStockOnly, sortBy]);
 
   const activeFilterCount =
-    selectedCategories.length +
     selectedForms.length +
     (inStockOnly ? 1 : 0) +
     (priceMin > 0 || priceMax < 5000 ? 1 : 0);
 
   const clearAllFilters = () => {
-    setSelectedCategories([]);
     setSelectedForms([]);
     setPriceMin(0);
     setPriceMax(5000);
     setInStockOnly(false);
     setSearch("");
   };
-
-  function toggleCategory(cat: string) {
-    setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
-  }
 
   function toggleForm(form: string) {
     setSelectedForms((prev) =>
@@ -203,22 +186,6 @@ export default function ProductsPage() {
 
   const FilterPanel = () => (
     <div className="space-y-6">
-      <FilterSection title="Categories">
-        <div className="space-y-2.5">
-          {CATEGORIES.map((cat) => (
-            <label key={cat} className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(cat)}
-                onChange={() => toggleCategory(cat)}
-                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-gray-700 text-sm group-hover:text-primary-700 transition">{cat}</span>
-            </label>
-          ))}
-        </div>
-      </FilterSection>
-
       <FilterSection title="Form Type">
         <div className="space-y-2.5">
           {FORM_TYPES.map((form) => (
@@ -400,14 +367,8 @@ export default function ProductsPage() {
             </div>
 
             {/* Active filter chips */}
-            {(selectedCategories.length > 0 || selectedForms.length > 0 || inStockOnly) && (
+            {(selectedForms.length > 0 || inStockOnly) && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {selectedCategories.map((cat) => (
-                  <span key={cat} className="bg-primary-50 text-primary-700 border border-primary-100 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                    {cat}
-                    <button onClick={() => toggleCategory(cat)}><X size={12} /></button>
-                  </span>
-                ))}
                 {selectedForms.map((form) => (
                   <span key={form} className="bg-primary-50 text-primary-700 border border-primary-100 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
                     {form}

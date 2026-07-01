@@ -17,7 +17,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="text-3xl font-black text-white tracking-tight flex items-center gap-2 mb-6">
-              SPR<span className="text-primary-500">Biotech</span>
+              SVO<span className="text-primary-500">Biotech</span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Empowering farmers with premium agricultural inputs, organic fertilizers, and cutting-edge bio-technology for maximum yield.
@@ -34,7 +34,6 @@ export default function Footer() {
             <h4 className="text-lg font-bold mb-6">Quick Links</h4>
             <ul className="space-y-3">
               <li><Link href="/products" className="text-gray-400 hover:text-primary-400 transition text-sm">All Products</Link></li>
-              <li><Link href="/blog" className="text-gray-400 hover:text-primary-400 transition text-sm">Farming Tips & Blog</Link></li>
               <li><Link href="/about" className="text-gray-400 hover:text-primary-400 transition text-sm">About Us</Link></li>
               <li><Link href="/contact" className="text-gray-400 hover:text-primary-400 transition text-sm">Contact Support</Link></li>
             </ul>
@@ -44,9 +43,6 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-bold mb-6">Customer Service</h4>
             <ul className="space-y-3">
-              <li><Link href="/profile/orders" className="text-gray-400 hover:text-primary-400 transition text-sm">Track Order</Link></li>
-              <li><Link href="/shipping-policy" className="text-gray-400 hover:text-primary-400 transition text-sm">Shipping Policy</Link></li>
-              <li><Link href="/refund-policy" className="text-gray-400 hover:text-primary-400 transition text-sm">Returns & Refunds</Link></li>
               <li><Link href="/faq" className="text-gray-400 hover:text-primary-400 transition text-sm">FAQs</Link></li>
             </ul>
           </div>

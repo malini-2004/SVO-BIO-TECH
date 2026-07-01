@@ -3,6 +3,7 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 // Helper to verify the caller is an existing admin
 async function verifyAdmin(request: Request): Promise<boolean> {
+  if (!adminAuth) return false;
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;
   try {
@@ -16,6 +17,9 @@ async function verifyAdmin(request: Request): Promise<boolean> {
 
 // GET /api/admin/users — list all admin users stored in Firestore
 export async function GET(request: Request) {
+  if (!adminDb) {
+    return NextResponse.json({ error: "Firebase Admin SDK not initialized." }, { status: 503 });
+  }
   if (!(await verifyAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -31,6 +35,9 @@ export async function GET(request: Request) {
 
 // POST /api/admin/users — create a new Firebase user and grant admin claim
 export async function POST(request: Request) {
+  if (!adminAuth || !adminDb) {
+    return NextResponse.json({ error: "Firebase Admin SDK not initialized." }, { status: 503 });
+  }
   if (!(await verifyAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -76,6 +83,9 @@ export async function POST(request: Request) {
 
 // DELETE /api/admin/users — revoke admin claim and remove from adminUsers collection
 export async function DELETE(request: Request) {
+  if (!adminAuth || !adminDb) {
+    return NextResponse.json({ error: "Firebase Admin SDK not initialized." }, { status: 503 });
+  }
   if (!(await verifyAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

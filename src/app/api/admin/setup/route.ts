@@ -16,6 +16,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    if (!adminAuth || !adminDb) {
+      return NextResponse.json(
+        { error: "Firebase Admin SDK not initialized. Set FIREBASE_PRIVATE_KEY and FIREBASE_CLIENT_EMAIL in your environment." },
+        { status: 503 }
+      );
+    }
+
     const userRecord = await adminAuth.getUserByEmail(email);
     
     // Set custom user claims
