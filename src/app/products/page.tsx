@@ -20,6 +20,7 @@ const SORT_OPTIONS = [
   { value: "price_high", label: "Price: High to Low" },
   { value: "newest", label: "Newest Arrivals" },
 ];
+const DEFAULT_PRICE_MAX = 5000;
 
 function FilterSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -45,23 +46,26 @@ export default function ProductsPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [selectedForms, setSelectedForms] = useState<string[]>([]);
+  const [selectedForms, setSelectedForms] = useState<string[]>(() => {
+    const form = searchParams.get("formType");
+    return form ? [form] : [];
+  });
   const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(5000);
+  const [priceMax, setPriceMax] = useState(DEFAULT_PRICE_MAX);
   const [sortBy, setSortBy] = useState("best_selling");
   const [inStockOnly, setInStockOnly] = useState(false);
 
   useEffect(() => {
-    // Pre-apply URL query params
-    const form = searchParams.get("formType");
-    if (form) setSelectedForms([form]);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToProducts((fetched) => {
-      setAllProducts(fetched);
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToProducts(
+      (fetched) => {
+        setAllProducts(fetched);
+        setLoading(false);
+      },
+      () => {
+        setAllProducts([]);
+        setLoading(false);
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -82,7 +86,11 @@ export default function ProductsPage() {
       list = list.filter((p) => selectedForms.includes(p.formType));
     }
 
-    list = list.filter((p) => p.price >= priceMin && p.price <= priceMax);
+    list = list.filter((p) => p.price >= priceMin);
+
+    if (priceMax < DEFAULT_PRICE_MAX) {
+      list = list.filter((p) => p.price <= priceMax);
+    }
 
     if (inStockOnly) list = list.filter((p) => p.stockQuantity > 0);
 
@@ -102,12 +110,12 @@ export default function ProductsPage() {
   const activeFilterCount =
     selectedForms.length +
     (inStockOnly ? 1 : 0) +
-    (priceMin > 0 || priceMax < 5000 ? 1 : 0);
+    (priceMin > 0 || priceMax < DEFAULT_PRICE_MAX ? 1 : 0);
 
   const clearAllFilters = () => {
     setSelectedForms([]);
     setPriceMin(0);
-    setPriceMax(5000);
+    setPriceMax(DEFAULT_PRICE_MAX);
     setInStockOnly(false);
     setSearch("");
   };
@@ -118,7 +126,7 @@ export default function ProductsPage() {
     );
   }
 
-  const FilterPanel = () => (
+  const renderFilterPanel = () => (
     <div className="space-y-6">
       <FilterSection title="Form Type">
         <div className="space-y-2.5">
@@ -141,7 +149,7 @@ export default function ProductsPage() {
           <input
             type="range"
             min={0}
-            max={5000}
+            max={DEFAULT_PRICE_MAX}
             step={50}
             value={priceMax}
             onChange={(e) => setPriceMax(Number(e.target.value))}
@@ -159,8 +167,8 @@ export default function ProductsPage() {
             <input
               type="number"
               placeholder="Max"
-              value={priceMax === 5000 ? "" : priceMax}
-              onChange={(e) => setPriceMax(Number(e.target.value) || 5000)}
+              value={priceMax === DEFAULT_PRICE_MAX ? "" : priceMax}
+              onChange={(e) => setPriceMax(Number(e.target.value) || DEFAULT_PRICE_MAX)}
               className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-primary-500"
             />
           </div>
@@ -242,7 +250,7 @@ export default function ProductsPage() {
                 <X size={18} />
               </button>
             </div>
-            <FilterPanel />
+            {renderFilterPanel()}
             <button
               className="mt-6 w-full bg-primary-600 text-white font-bold py-3 rounded-xl md:hidden"
               onClick={() => setMobileFiltersOpen(false)}

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { subscribeToProducts } from "@/lib/firebase/products";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
@@ -63,16 +62,6 @@ const REVIEWS = [
   },
 ];
 
-
-function StarRating({ count }: { count: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} size={14} className={i < count ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"} />
-      ))}
-    </div>
-  );
-}
 
 function TestimonialsSection() {
   const [active, setActive] = useState(0);
@@ -248,10 +237,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeToProducts((fetched) => {
-      setProducts(fetched);
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToProducts(
+      (fetched) => {
+        setProducts(fetched);
+        setLoading(false);
+      },
+      () => {
+        setProducts([]);
+        setLoading(false);
+      },
+    );
     return () => unsubscribe();
   }, []);
 

@@ -1,13 +1,11 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
 import { initializeFirestore, Firestore } from "firebase/firestore";
-import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
@@ -21,7 +19,6 @@ export const isFirebaseConfigured =
 let app: FirebaseApp = null as any;
 let auth: Auth = null as any;
 let db: Firestore = null as any;
-let storage: FirebaseStorage = null as any;
 let googleProvider: GoogleAuthProvider = null as any;
 
 if (isFirebaseConfigured) {
@@ -31,7 +28,6 @@ if (isFirebaseConfigured) {
     db = initializeFirestore(app, {
       experimentalForceLongPolling: true,
     });
-    storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
   } catch (e) {
     console.error("[Firebase] Initialization error:", e);
@@ -43,4 +39,4 @@ if (isFirebaseConfigured) {
   );
 }
 
-export { app, auth, db, storage, googleProvider };
+export { app, auth, db, googleProvider };

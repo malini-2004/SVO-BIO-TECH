@@ -23,20 +23,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedSize, setSelectedSize] = useState<string>("");
 
   useEffect(() => {
-    const unsubscribe = subscribeToProduct(id, (p) => {
-      if (p) {
-        setProduct(p);
-        const sizes = getAvailableSizes(p);
-        if (sizes.length > 0) {
-          const normalizedWeight = p.weight.toLowerCase().replace(/\s+/g, "");
-          const matched = sizes.find(s => s.toLowerCase() === normalizedWeight);
-          setSelectedSize(matched || sizes[0]);
+    const unsubscribe = subscribeToProduct(
+      id,
+      (p) => {
+        if (p) {
+          setProduct(p);
+          const sizes = getAvailableSizes(p);
+          if (sizes.length > 0) {
+            const normalizedWeight = p.weight.toLowerCase().replace(/\s+/g, "");
+            const matched = sizes.find(s => s.toLowerCase() === normalizedWeight);
+            setSelectedSize(matched || sizes[0]);
+          }
+        } else {
+          setProduct(null);
         }
-      } else {
+        setLoading(false);
+      },
+      () => {
         setProduct(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      },
+    );
     return () => unsubscribe();
   }, [id]);
 

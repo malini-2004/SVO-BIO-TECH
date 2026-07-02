@@ -9,7 +9,6 @@ import {
   updateProduct,
   deleteProduct,
   uploadProductImages,
-  deleteProductImage
 } from "@/lib/firebase/products";
 import {
   Plus, Search, Edit2, Trash2, X, Upload, Eye, EyeOff, Star,
@@ -33,6 +32,11 @@ type FormData = {
   dosage: string; method: string; precautions: string;
   tags: string;
   isFeatured: boolean; isVisible: boolean;
+};
+
+type PendingImage = {
+  file: File;
+  previewUrl: string;
 };
 
 const BLANK_FORM: FormData = {
@@ -79,6 +83,7 @@ export default function AdminProductsPage() {
   // Local image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -96,12 +101,14 @@ export default function AdminProductsPage() {
   }, []);
 
   function openAdd() {
+    clearPendingImages();
     setForm(BLANK_FORM);
     setEditingId(null);
     setShowModal(true);
   }
 
   function openEdit(product: Product) {
+    clearPendingImages();
     setForm({
       name: product.name,
       shortDescription: product.shortDescription ?? "",
@@ -128,6 +135,18 @@ export default function AdminProductsPage() {
     });
     setEditingId(product.id);
     setShowModal(true);
+  }
+
+  function clearPendingImages() {
+    setPendingImages((current) => {
+      current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      return [];
+    });
+  }
+
+  function closeModal() {
+    clearPendingImages();
+    setShowModal(false);
   }
 
   function setField<K extends keyof FormData>(key: K, val: FormData[K]) {
@@ -157,14 +176,13 @@ export default function AdminProductsPage() {
       const urls = prev.imageUrls.filter((_, i) => i !== idx);
       return { ...prev, imageUrls: urls.length ? urls : [""] };
     });
-    
-    // Clean up from Firebase Storage if it's a storage URL
-    if (urlToRemove && urlToRemove.includes("firebasestorage.googleapis.com")) {
-      try {
-        await deleteProductImage(urlToRemove);
-      } catch (err) {
-        console.warn("Failed to delete removed image from storage:", err);
-      }
+
+    if (urlToRemove?.startsWith("blob:")) {
+      setPendingImages((current) => {
+        const removed = current.find((image) => image.previewUrl === urlToRemove);
+        if (removed) URL.revokeObjectURL(removed.previewUrl);
+        return current.filter((image) => image.previewUrl !== urlToRemove);
+      });
     }
   }
 
@@ -196,20 +214,22 @@ export default function AdminProductsPage() {
       return;
     }
 
-    setUploadingImages(true);
     try {
-      const uploadedUrls = await uploadProductImages(selected);
+      const pending = selected.map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      setPendingImages((prev) => [...prev, ...pending].slice(0, MAX_IMAGES));
       setForm((prev) => {
         const existing = prev.imageUrls.filter((u) => u.trim() !== "");
-        const combined = [...existing, ...uploadedUrls].slice(0, MAX_IMAGES);
+        const combined = [...existing, ...pending.map((image) => image.previewUrl)].slice(0, MAX_IMAGES);
         return { ...prev, imageUrls: combined.length ? combined : [""] };
       });
-      toast.success(`${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} uploaded`);
+      toast.success(`${pending.length} image${pending.length > 1 ? "s" : ""} selected`);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload image(s). Ensure Storage CORS headers are configured.");
+      toast.error("Failed to prepare selected image(s).");
     } finally {
-      setUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -222,7 +242,12 @@ export default function AdminProductsPage() {
     }
     setSaving(true);
     try {
-      const images = form.imageUrls.filter((u) => u.trim() !== "");
+      setUploadingImages(pendingImages.length > 0);
+      const retainedUrls = form.imageUrls.filter((u) => u.trim() !== "" && !u.startsWith("blob:"));
+      const uploadedUrls = pendingImages.length
+        ? await uploadProductImages(pendingImages.map((image) => image.file))
+        : [];
+      const images = [...retainedUrls, ...uploadedUrls].slice(0, MAX_IMAGES);
       const payload = {
         name: form.name,
         slug: slugify(form.name),
@@ -262,11 +287,12 @@ export default function AdminProductsPage() {
         await createProduct(payload);
         toast.success("Product added successfully");
       }
-      setShowModal(false);
+      closeModal();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save product. Check Firestore permissions.");
+      toast.error(err instanceof Error ? err.message : "Failed to save product. Check Firestore permissions.");
     } finally {
+      setUploadingImages(false);
       setSaving(false);
     }
   }
@@ -274,8 +300,7 @@ export default function AdminProductsPage() {
   async function handleDelete(id: string) {
     setDeleting(true);
     try {
-      const productToDelete = products.find((p) => p.id === id);
-      await deleteProduct(id, productToDelete?.images);
+      await deleteProduct(id);
       toast.success("Product deleted");
       setDeleteConfirmId(null);
     } catch {
@@ -459,7 +484,7 @@ export default function AdminProductsPage() {
               <h2 className="text-xl font-black text-gray-900">
                 {editingId ? "Edit Product" : "Add New Product"}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition">
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg transition">
                 <X size={20} />
               </button>
             </div>
@@ -793,7 +818,7 @@ export default function AdminProductsPage() {
               <div className="flex gap-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white pb-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="flex-1 border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition text-sm"
                 >
                   Cancel
