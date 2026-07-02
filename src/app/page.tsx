@@ -19,7 +19,7 @@ const REVIEWS = [
     name: "Rajesh Kumar",
     role: "Paddy Farmer, Tamil Nadu",
     rating: 5,
-    text: "SPR NPK 19:19:19 has transformed my paddy fields. Yield increased by nearly 40% in two seasons. The water-soluble formula mixes instantly and the results are visible within days.",
+    text: "SVO NPK 19:19:19 has transformed my paddy fields. Yield increased by nearly 40% in two seasons. The water-soluble formula mixes instantly and the results are visible within days.",
     crop: "Paddy",
     initials: "RK",
     gradient: "from-green-500 to-emerald-700",
@@ -37,7 +37,7 @@ const REVIEWS = [
     name: "Suresh Patel",
     role: "Cotton Farmer, Gujarat",
     rating: 5,
-    text: "Fast delivery and authentic products — that's what I love about SPR Biotech. The seaweed extract gave my cotton plants amazing vigour and the boll setting improved significantly.",
+    text: "Fast delivery and authentic products — that's what I love about SVO Biotech. The seaweed extract gave my cotton plants amazing vigour and the boll setting improved significantly.",
     crop: "Cotton",
     initials: "SP",
     gradient: "from-blue-500 to-indigo-700",
@@ -46,7 +46,7 @@ const REVIEWS = [
     name: "Anitha Rajan",
     role: "Banana Grower, Kerala",
     rating: 5,
-    text: "The Humic Acid granules made an incredible difference in my banana plantation. Bunch weight increased and fruit quality improved visibly. I recommend SPR Biotech to every farmer I meet.",
+    text: "The Humic Acid granules made an incredible difference in my banana plantation. Bunch weight increased and fruit quality improved visibly. I recommend SVO Biotech to every farmer I meet.",
     crop: "Banana",
     initials: "AR",
     gradient: "from-yellow-500 to-amber-600",
@@ -347,9 +347,9 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-40 h-40 bg-green-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-400/10 rounded-full translate-y-1/2 -translate-x-1/2" />
                 <Leaf size={40} className="text-green-300 mb-4" />
-                <h3 className="text-2xl font-black mb-3">SPR Biotech</h3>
+                <h3 className="text-2xl font-black mb-3">SVO Biotech</h3>
                 <p className="text-green-100 text-sm leading-relaxed mb-6">
-                  Founded in 2010, SPR Biotech is a leading manufacturer of bio-fertilizers and organic agricultural inputs based in Tamil Nadu.
+                  Founded in 2010, SVO Biotech is a leading manufacturer of bio-fertilizers and organic agricultural inputs based in Tamil Nadu.
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   {[

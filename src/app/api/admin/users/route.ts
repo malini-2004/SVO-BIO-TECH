@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
+import { DESIGNATED_ADMINS } from "@/context/AuthContext";
+
 // Helper to verify the caller is an existing admin
 async function verifyAdmin(request: Request): Promise<boolean> {
   if (!adminAuth) return false;
@@ -9,8 +11,30 @@ async function verifyAdmin(request: Request): Promise<boolean> {
   try {
     const token = authHeader.split("Bearer ")[1];
     const decoded = await adminAuth.verifyIdToken(token);
-    return !!decoded.admin;
-  } catch {
+    
+    // 1. Check custom claim
+    if (decoded.admin) return true;
+
+    // 2. Check hardcoded designated admins
+    const email = decoded.email?.toLowerCase();
+    if (email && DESIGNATED_ADMINS.map(e => e.toLowerCase()).includes(email)) {
+      return true;
+    }
+
+    // 3. Check Firestore 'admins' collection
+    if (adminDb && decoded.uid) {
+      const adminDoc = await adminDb.collection("admins").doc(decoded.uid).get();
+      if (adminDoc.exists) return true;
+
+      if (email) {
+        const adminEmailSnap = await adminDb.collection("admins").where("email", "==", email).get();
+        if (!adminEmailSnap.empty) return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("verifyAdmin error:", error);
     return false;
   }
 }
@@ -25,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snapshot = await adminDb.collection("adminUsers").orderBy("createdAt", "desc").get();
+    const snapshot = await adminDb.collection("admins").orderBy("createdAt", "desc").get();
     const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return NextResponse.json({ users });
   } catch (error: any) {
@@ -49,6 +73,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
+    // Prevent duplicate entries by checking if the email already exists in 'admins' collection
+    const existingAdmins = await adminDb.collection("admins").where("email", "==", email).get();
+    if (!existingAdmins.empty) {
+      return NextResponse.json({ error: "An admin with this email already exists" }, { status: 409 });
+    }
+
     // Create the Firebase Auth user
     const userRecord = await adminAuth.createUser({
       email,
@@ -59,14 +89,14 @@ export async function POST(request: Request) {
     // Grant admin custom claim
     await adminAuth.setCustomUserClaims(userRecord.uid, { admin: true });
 
-    // Persist to Firestore adminUsers collection
+    // Persist to Firestore admins collection
     const userData = {
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: userRecord.displayName || "",
       createdAt: new Date().toISOString(),
     };
-    await adminDb.collection("adminUsers").doc(userRecord.uid).set(userData);
+    await adminDb.collection("admins").doc(userRecord.uid).set(userData);
 
     // Also update the general users collection
     await adminDb.collection("users").doc(userRecord.uid).set(
@@ -99,8 +129,8 @@ export async function DELETE(request: Request) {
     // Revoke admin claim (set to empty object)
     await adminAuth.setCustomUserClaims(uid, { admin: false });
 
-    // Remove from adminUsers collection
-    await adminDb.collection("adminUsers").doc(uid).delete();
+    // Remove from admins collection
+    await adminDb.collection("admins").doc(uid).delete();
 
     // Update role in users collection
     await adminDb.collection("users").doc(uid).set({ role: "user" }, { merge: true });

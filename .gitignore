@@ -60,3 +60,7 @@ next-env.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# service account key
+serviceAccountKey.json
+

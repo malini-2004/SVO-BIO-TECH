@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { subscribeToProducts } from "@/lib/firebase/products";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
@@ -12,7 +11,7 @@ import {
 
 // No mock products — all products come from Firestore in real time
 
-const FORM_TYPES = ["Granular", "Liquid", "Powder"];
+
 const SORT_OPTIONS = [
   { value: "best_selling", label: "Best Selling" },
   { value: "rating", label: "Highest Rated" },
@@ -39,17 +38,13 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
 }
 
 export default function ProductsPage() {
-  const searchParams = useSearchParams();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [selectedForms, setSelectedForms] = useState<string[]>(() => {
-    const form = searchParams.get("formType");
-    return form ? [form] : [];
-  });
+
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(DEFAULT_PRICE_MAX);
   const [sortBy, setSortBy] = useState("best_selling");
@@ -82,9 +77,7 @@ export default function ProductsPage() {
       );
     }
 
-    if (selectedForms.length > 0) {
-      list = list.filter((p) => selectedForms.includes(p.formType));
-    }
+
 
     list = list.filter((p) => p.price >= priceMin);
 
@@ -105,44 +98,24 @@ export default function ProductsPage() {
     });
 
     return list;
-  }, [allProducts, search, selectedForms, priceMin, priceMax, inStockOnly, sortBy]);
+  }, [allProducts, search, priceMin, priceMax, inStockOnly, sortBy]);
 
   const activeFilterCount =
-    selectedForms.length +
     (inStockOnly ? 1 : 0) +
     (priceMin > 0 || priceMax < DEFAULT_PRICE_MAX ? 1 : 0);
 
   const clearAllFilters = () => {
-    setSelectedForms([]);
     setPriceMin(0);
     setPriceMax(DEFAULT_PRICE_MAX);
     setInStockOnly(false);
     setSearch("");
   };
 
-  function toggleForm(form: string) {
-    setSelectedForms((prev) =>
-      prev.includes(form) ? prev.filter((f) => f !== form) : [...prev, form]
-    );
-  }
+
 
   const renderFilterPanel = () => (
     <div className="space-y-6">
-      <FilterSection title="Form Type">
-        <div className="space-y-2.5">
-          {FORM_TYPES.map((form) => (
-            <label key={form} className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={selectedForms.includes(form)}
-                onChange={() => toggleForm(form)}
-                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-gray-700 text-sm group-hover:text-primary-700 transition">{form}</span>
-            </label>
-          ))}
-        </div>
-      </FilterSection>
+
 
       <FilterSection title="Price Range">
         <div className="space-y-3">
@@ -309,14 +282,8 @@ export default function ProductsPage() {
             </div>
 
             {/* Active filter chips */}
-            {(selectedForms.length > 0 || inStockOnly) && (
+            {inStockOnly && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {selectedForms.map((form) => (
-                  <span key={form} className="bg-primary-50 text-primary-700 border border-primary-100 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                    {form}
-                    <button onClick={() => toggleForm(form)}><X size={12} /></button>
-                  </span>
-                ))}
                 {inStockOnly && (
                   <span className="bg-primary-50 text-primary-700 border border-primary-100 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
                     In Stock

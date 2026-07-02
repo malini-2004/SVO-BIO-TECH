@@ -68,7 +68,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-500 text-sm">© {new Date().getFullYear()} SPR Biotech. All rights reserved.</p>
+          <p className="text-gray-500 text-sm">© {new Date().getFullYear()} SVO Biotech. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="text-gray-500 hover:text-gray-300 text-sm transition">Privacy Policy</Link>
             <Link href="/terms" className="text-gray-500 hover:text-gray-300 text-sm transition">Terms of Service</Link>

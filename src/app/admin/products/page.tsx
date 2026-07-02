@@ -11,27 +11,25 @@ import {
   uploadProductImages,
 } from "@/lib/firebase/products";
 import {
-  Plus, Search, Edit2, Trash2, X, Upload, Eye, EyeOff, Star,
-  AlertTriangle, CheckCircle2, Loader2
+  Plus, Search, Edit2, Trash2, X, Upload, Eye, EyeOff,
+  AlertTriangle, CheckCircle2, Loader2, ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_IMAGES = 4;
 
-const CATEGORIES = ["Fertilizers", "Organic", "Bio-Stimulants", "Pesticides", "Seeds"];
-const FORM_TYPES: Product["formType"][] = ["Granular", "Liquid", "Powder"];
 const GST_RATES = [0, 5, 12, 18];
+
+const SIZE_OPTIONS = ["100 ml", "250 ml", "500 ml", "1 L", "5 L", "1 kg"];
 
 type FormData = {
   name: string; shortDescription: string; description: string;
-  category: string; brand: string;
   imageUrls: string[];
   price: string; mrp: string; discountPercent: string; gstRate: string;
-  sku: string; stockQuantity: string; weight: string; formType: Product["formType"];
-  npkRatio: string; targetCrops: string;
+  sku: string; stockQuantity: string; sizes: string[];
   dosage: string; method: string; precautions: string;
   tags: string;
-  isFeatured: boolean; isVisible: boolean;
+  isVisible: boolean;
 };
 
 type PendingImage = {
@@ -41,14 +39,12 @@ type PendingImage = {
 
 const BLANK_FORM: FormData = {
   name: "", shortDescription: "", description: "",
-  category: "Fertilizers", brand: "SPR Biotech",
   imageUrls: [""],
   price: "", mrp: "", discountPercent: "", gstRate: "5",
-  sku: "", stockQuantity: "", weight: "", formType: "Granular",
-  npkRatio: "", targetCrops: "",
+  sku: "", stockQuantity: "", sizes: [],
   dosage: "", method: "", precautions: "",
   tags: "",
-  isFeatured: false, isVisible: true,
+  isVisible: true,
 };
 
 function slugify(name: string) {
@@ -69,6 +65,64 @@ function InputField({ label, required, children }: { label: string; required?: b
 const INPUT_CLS = "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-100 transition";
 const TEXTAREA_CLS = `${INPUT_CLS} resize-none`;
 
+/* ── Multi-select sizes dropdown ── */
+function SizeMultiSelect({ selected, onChange }: { selected: string[]; onChange: (sizes: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function toggle(size: string) {
+    onChange(
+      selected.includes(size)
+        ? selected.filter((s) => s !== size)
+        : [...selected, size]
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`${INPUT_CLS} flex items-center justify-between gap-2 text-left`}
+      >
+        <span className={selected.length ? "text-gray-900" : "text-gray-400"}>
+          {selected.length ? selected.join(", ") : "Select sizes…"}
+        </span>
+        <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-52 overflow-y-auto">
+          {SIZE_OPTIONS.map((size) => {
+            const checked = selected.includes(size);
+            return (
+              <button
+                key={size}
+                type="button"
+                onClick={() => toggle(size)}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 transition ${checked ? "text-primary-700 font-semibold bg-primary-50/60" : "text-gray-700"}`}
+              >
+                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${checked ? "border-primary-600 bg-primary-600" : "border-gray-300"}`}>
+                  {checked && <CheckCircle2 size={10} className="text-white" />}
+                </div>
+                {size}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +133,9 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Local image upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,8 +170,6 @@ export default function AdminProductsPage() {
       name: product.name,
       shortDescription: product.shortDescription ?? "",
       description: product.description,
-      category: product.category,
-      brand: product.brand,
       imageUrls: product.images?.length ? product.images : [""],
       price: String(product.price),
       mrp: String(product.mrp),
@@ -122,15 +177,11 @@ export default function AdminProductsPage() {
       gstRate: String(product.gstRate),
       sku: product.sku,
       stockQuantity: String(product.stockQuantity),
-      weight: product.weight,
-      formType: product.formType,
-      npkRatio: product.specifications?.npkRatio ?? "",
-      targetCrops: product.specifications?.targetCrops ?? "",
+      sizes: product.sizes ?? [],
       dosage: product.usageGuide?.dosage ?? "",
       method: product.usageGuide?.method ?? "",
       precautions: product.usageGuide?.precautions ?? "",
       tags: product.tags?.join(", ") ?? "",
-      isFeatured: product.isFeatured,
       isVisible: product.isVisible,
     });
     setEditingId(product.id);
@@ -253,8 +304,6 @@ export default function AdminProductsPage() {
         slug: slugify(form.name),
         shortDescription: form.shortDescription,
         description: form.description,
-        category: form.category,
-        brand: form.brand,
         images,
         price: parseFloat(form.price),
         mrp: parseFloat(form.mrp),
@@ -262,18 +311,13 @@ export default function AdminProductsPage() {
         gstRate: parseFloat(form.gstRate),
         sku: form.sku,
         stockQuantity: parseInt(form.stockQuantity),
-        weight: form.weight,
-        formType: form.formType,
-        specifications: {
-          ...(form.npkRatio ? { npkRatio: form.npkRatio } : {}),
-          ...(form.targetCrops ? { targetCrops: form.targetCrops } : {}),
-        },
+        sizes: form.sizes,
+        specifications: {},
         usageGuide: { dosage: form.dosage, method: form.method, precautions: form.precautions },
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         rating: editingId
           ? (products.find((p) => p.id === editingId)?.rating ?? { average: 0, count: 0 })
           : { average: 0, count: 0 },
-        isFeatured: form.isFeatured,
         isVisible: form.isVisible,
         createdAt: editingId
           ? (products.find((p) => p.id === editingId)?.createdAt ?? new Date().toISOString())
@@ -303,10 +347,27 @@ export default function AdminProductsPage() {
       await deleteProduct(id);
       toast.success("Product deleted");
       setDeleteConfirmId(null);
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     } catch {
       toast.error("Failed to delete product");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(selectedIds.map(id => deleteProduct(id)));
+      toast.success(`${selectedIds.length} products deleted successfully`);
+      setSelectedIds([]);
+      setShowBulkDeleteConfirm(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete some products");
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -322,8 +383,7 @@ export default function AdminProductsPage() {
   const filtered = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
+      p.sku.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -352,25 +412,45 @@ export default function AdminProductsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search by name, SKU, category..."
+              placeholder="Search by name or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-primary-500"
             />
           </div>
-          <div className="flex gap-2 w-full sm:w-auto ml-auto">
-            <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:border-primary-500">
-              <option value="">All Categories</option>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </div>
         </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-red-50/50 border-b border-red-100 p-3 px-4 flex items-center justify-between">
+            <span className="text-sm font-semibold text-red-800">
+              {selectedIds.length} product{selectedIds.length > 1 ? "s" : ""} selected
+            </span>
+            <button
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition shadow-sm flex items-center gap-1.5"
+            >
+              <Trash2 size={14} /> Delete Selected
+            </button>
+          </div>
+        )}
 
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="py-3 px-5 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedIds(filtered.map(p => p.id));
+                      else setSelectedIds([]);
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                  />
+                </th>
                 <th className="py-3 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
                 <th className="py-3 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">SKU</th>
                 <th className="py-3 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Price</th>
@@ -382,20 +462,31 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
                     <Loader2 className="animate-spin mx-auto mb-2" size={24} />
                     Loading products...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
                     {search ? "No products match your search." : "No products yet. Add your first product."}
                   </td>
                 </tr>
               ) : (
                 filtered.map((product) => (
                   <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="py-4 px-5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(product.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedIds(prev => [...prev, product.id]);
+                          else setSelectedIds(prev => prev.filter(id => id !== product.id));
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="py-4 px-5">
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 relative">
@@ -407,12 +498,7 @@ export default function AdminProductsPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-sm text-gray-900 line-clamp-1">{product.name}</p>
-                          <p className="text-xs text-gray-500">{product.category} · {product.weight}</p>
-                          {product.isFeatured && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-0.5">
-                              <Star size={9} className="fill-amber-500" /> Featured
-                            </span>
-                          )}
+                          <p className="text-xs text-gray-500">{product.sizes?.join(", ") || product.weight || "—"}</p>
                         </div>
                       </div>
                     </td>
@@ -503,29 +589,9 @@ export default function AdminProductsPage() {
                       value={form.name}
                       onChange={(e) => setField("name", e.target.value)}
                       className={INPUT_CLS}
-                      placeholder="e.g. SPR Premium NPK 19:19:19"
+                      placeholder="e.g. SVO Premium NPK 19:19:19"
                     />
                   </InputField>
-                  <div className="grid grid-cols-2 gap-4">
-                    <InputField label="Category" required>
-                      <select
-                        value={form.category}
-                        onChange={(e) => setField("category", e.target.value)}
-                        className={INPUT_CLS}
-                      >
-                        {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                      </select>
-                    </InputField>
-                    <InputField label="Brand" required>
-                      <input
-                        type="text"
-                        value={form.brand}
-                        onChange={(e) => setField("brand", e.target.value)}
-                        className={INPUT_CLS}
-                        placeholder="Brand name"
-                      />
-                    </InputField>
-                  </div>
                   <InputField label="Short Description">
                     <input
                       type="text"
@@ -684,7 +750,7 @@ export default function AdminProductsPage() {
                       value={form.sku}
                       onChange={(e) => setField("sku", e.target.value)}
                       className={INPUT_CLS}
-                      placeholder="e.g. SPR-NPK-191919-1KG"
+                      placeholder="e.g. SVO-NPK-191919-1KG"
                     />
                   </InputField>
                   <InputField label="Stock Quantity" required>
@@ -698,47 +764,12 @@ export default function AdminProductsPage() {
                       placeholder="e.g. 100"
                     />
                   </InputField>
-                  <InputField label="Weight / Volume">
-                    <input
-                      type="text"
-                      value={form.weight}
-                      onChange={(e) => setField("weight", e.target.value)}
-                      className={INPUT_CLS}
-                      placeholder="e.g. 1 kg or 500 ml"
-                    />
-                  </InputField>
-                  <InputField label="Form Type">
-                    <select
-                      value={form.formType}
-                      onChange={(e) => setField("formType", e.target.value as Product["formType"])}
-                      className={INPUT_CLS}
-                    >
-                      {FORM_TYPES.map((f) => <option key={f}>{f}</option>)}
-                    </select>
-                  </InputField>
                 </div>
-              </div>
-
-              {/* Specifications */}
-              <div>
-                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Specifications</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <InputField label="NPK Ratio">
-                    <input
-                      type="text"
-                      value={form.npkRatio}
-                      onChange={(e) => setField("npkRatio", e.target.value)}
-                      className={INPUT_CLS}
-                      placeholder="e.g. 19:19:19"
-                    />
-                  </InputField>
-                  <InputField label="Target Crops">
-                    <input
-                      type="text"
-                      value={form.targetCrops}
-                      onChange={(e) => setField("targetCrops", e.target.value)}
-                      className={INPUT_CLS}
-                      placeholder="e.g. Paddy, Wheat, Vegetables"
+                <div className="mt-4">
+                  <InputField label="Available Sizes">
+                    <SizeMultiSelect
+                      selected={form.sizes}
+                      onChange={(sizes) => setField("sizes", sizes)}
                     />
                   </InputField>
                 </div>
@@ -778,7 +809,7 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              {/* Tags & Flags */}
+              {/* Tags & Settings */}
               <div>
                 <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Tags & Settings</h3>
                 <div className="space-y-4">
@@ -792,15 +823,6 @@ export default function AdminProductsPage() {
                     />
                   </InputField>
                   <div className="flex gap-6">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <div
-                        onClick={() => setField("isFeatured", !form.isFeatured)}
-                        className={`w-10 h-6 rounded-full transition-colors relative cursor-pointer ${form.isFeatured ? "bg-amber-500" : "bg-gray-200"}`}
-                      >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isFeatured ? "translate-x-5" : "translate-x-1"}`} />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-700">Featured Product</span>
-                    </label>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <div
                         onClick={() => setField("isVisible", !form.isVisible)}
@@ -862,6 +884,36 @@ export default function AdminProductsPage() {
               >
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : null}
                 {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Bulk Delete Confirm Modal ── */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={28} className="text-red-500" />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">Delete Selected Products?</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Are you sure you want to delete {selectedIds.length} selected product{selectedIds.length > 1 ? "s" : ""}? This action cannot be undone and will permanently remove them and their images.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex-1 border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2"
+              >
+                {bulkDeleting ? <Loader2 size={14} className="animate-spin" /> : null}
+                {bulkDeleting ? "Deleting..." : "Delete All"}
               </button>
             </div>
           </div>

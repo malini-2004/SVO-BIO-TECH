@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SPR Biotech | Fertilizer E-Commerce",
+  title: "SVO Biotech | Fertilizer E-Commerce",
   description: "Premium Quality Fertilizer for Maximum Yield",
 };
 

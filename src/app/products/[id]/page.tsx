@@ -30,7 +30,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           setProduct(p);
           const sizes = getAvailableSizes(p);
           if (sizes.length > 0) {
-            const normalizedWeight = p.weight.toLowerCase().replace(/\s+/g, "");
+            const normalizedWeight = (p.weight || "").toLowerCase().replace(/\s+/g, "");
             const matched = sizes.find(s => s.toLowerCase() === normalizedWeight);
             setSelectedSize(matched || sizes[0]);
           }
@@ -48,12 +48,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [id]);
 
   function getAvailableSizes(p: Product): string[] {
-    const type = p.formType;
-    const wt = p.weight.toLowerCase();
-    if (type === "Liquid" || wt.includes("ml") || wt.includes("ltr")) {
-      return ["100ml", "250ml", "500ml", "1ltr", "5ltr"];
-    }
-    return ["1kg"];
+    if (p.sizes && p.sizes.length > 0) return p.sizes;
+    // Fallback for legacy products that only have a weight string
+    if (p.weight) return [p.weight];
+    return [];
   }
 
   const handleWhatsAppOrder = () => {

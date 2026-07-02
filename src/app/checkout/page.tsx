@@ -138,7 +138,7 @@ export default function CheckoutPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "rzp_test_mock_key_id",
         amount: rpOrder.amount,
         currency: rpOrder.currency,
-        name: "SPR Biotech",
+        name: "SVO Biotech",
         description: `Order of ${items.length} item(s)`,
         order_id: rpOrder.id,
         prefill: {
@@ -344,7 +344,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-900 text-sm line-clamp-1">{item.product.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{item.product.weight} · {item.product.formType}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{item.product.sizes?.join(", ") || item.product.weight || "—"}</p>
                         <p className="text-xs text-gray-600 mt-0.5">Qty: {item.quantity}</p>
                       </div>
                       <p className="font-black text-gray-900 text-sm">₹{(item.product.price * item.quantity).toFixed(2)}</p>

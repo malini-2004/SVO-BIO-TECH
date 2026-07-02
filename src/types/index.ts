@@ -4,8 +4,8 @@ export interface Product {
   slug: string;
   shortDescription: string;
   description: string; // Rich text
-  category: string;
-  brand: string;
+  category?: string;
+  brand?: string;
   images: string[]; // URLs
   price: number; // Selling price
   mrp: number; // Maximum Retail Price
@@ -13,15 +13,14 @@ export interface Product {
   gstRate: number; // 5, 12, 18
   sku: string;
   stockQuantity: number;
-  weight: string; // e.g., "1kg", "500ml"
-  formType: "Granular" | "Liquid" | "Powder";
+  sizes: string[]; // e.g., ["100 ml", "250 ml", "1 kg"]
+  weight?: string; // Legacy single-value field
+  formType?: string; // Legacy field
   rating: {
     average: number;
     count: number;
   };
   specifications: {
-    npkRatio?: string;
-    targetCrops?: string;
     [key: string]: any;
   };
   usageGuide: {
@@ -30,7 +29,7 @@ export interface Product {
     precautions: string;
   };
   tags: string[];
-  isFeatured: boolean;
+  isFeatured?: boolean;
   isVisible: boolean;
   createdAt: string;
 }
@@ -68,7 +67,7 @@ export interface Order {
     delivery: number;
     total: number;
   };
-  orderStatus: "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  orderStatus: "Shipped" | "Delivered" | "Cancelled";
   trackingLink?: string;
   createdAt: string;
 }

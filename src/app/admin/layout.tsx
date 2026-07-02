@@ -50,9 +50,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
     { name: "Products", icon: Package, href: "/admin/products" },
-    { name: "Orders", icon: ShoppingBag, href: "/admin/orders" },
-    { name: "Coupons", icon: Tag, href: "/admin/coupons" },
-    { name: "Reviews", icon: MessageSquare, href: "/admin/reviews" },
     { name: "Settings", icon: Settings, href: "/admin/settings" },
   ];
 
@@ -67,7 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 z-10">
         <div className="p-6 border-b border-gray-100">
           <Link href="/" className="text-2xl font-black text-primary-900 tracking-tight flex items-center gap-2">
-            SPR<span className="text-primary-600">Admin</span>
+            SVO<span className="text-primary-600">Admin</span>
           </Link>
         </div>
         
