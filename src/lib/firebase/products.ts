@@ -76,7 +76,7 @@ function getProductsQuery(visibleOnly: boolean) {
   if (!db) throw new Error("Firestore is not initialized.");
   const productCollection = collection(db, PRODUCTS_COLLECTION);
   return visibleOnly
-    ? query(productCollection, where("isVisible", "==", true), orderBy("createdAt", "desc"))
+    ? query(productCollection, where("isVisible", "==", true))
     : query(productCollection, orderBy("createdAt", "desc"));
 }
 
@@ -88,7 +88,9 @@ export async function getProducts(): Promise<Product[]> {
 
   try {
     const snap = await getDocs(getProductsQuery(true));
-    return snap.docs.map(docToProduct);
+    return snap.docs
+      .map(docToProduct)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error) {
     console.error("[products] getProducts failed:", error);
     return [];
@@ -119,7 +121,12 @@ export function subscribeToProducts(
 
   return onSnapshot(
     getProductsQuery(true),
-    (snap) => onData(snap.docs.map(docToProduct)),
+    (snap) => {
+      const products = snap.docs
+        .map(docToProduct)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      onData(products);
+    },
     (error) => {
       console.error("[products] subscribeToProducts failed:", error);
       onError?.(error);
