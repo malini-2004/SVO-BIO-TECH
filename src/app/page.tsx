@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts } from "@/lib/firebase/products";
+import { subscribeToProducts } from "@/lib/firebase/products";
 import { Product } from "@/types";
 import ProductCard from "@/components/products/ProductCard";
 import HeroSlider from "@/components/layout/HeroSlider";
@@ -13,104 +13,7 @@ import {
   Quote, ChevronLeft
 } from "lucide-react";
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: "p1",
-    name: "SPR Premium NPK 19:19:19 Water Soluble Fertilizer",
-    slug: "spr-premium-npk-19-19-19",
-    shortDescription: "100% water-soluble fertilizer for balanced crop growth and maximum yield.",
-    description: "Full description...",
-    category: "Fertilizers",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1628543105315-977ba2e0964c?w=500&q=80"],
-    price: 450, mrp: 600, discountPercent: 25, gstRate: 5,
-    sku: "SPR-NPK-191919-1KG", stockQuantity: 50, weight: "1 kg", formType: "Powder",
-    rating: { average: 4.8, count: 124 },
-    specifications: { npkRatio: "19:19:19", targetCrops: "Vegetables, Fruits, Cash Crops" },
-    usageGuide: { dosage: "5g/liter", method: "Foliar spray", precautions: "Avoid direct sunlight" },
-    tags: ["npk", "water-soluble"], isFeatured: true, isVisible: true, createdAt: "2026-05-15T00:00:00.000Z"
-  },
-  {
-    id: "p2",
-    name: "SPR Organic Neem Cake (Neem Khali)",
-    slug: "spr-organic-neem-khali",
-    shortDescription: "Natural pest repellent and soil conditioner rich in NPK nutrients.",
-    description: "Full description...",
-    category: "Organic",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1592982537447-6f2a6a0c6c8c?w=500&q=80"],
-    price: 180, mrp: 220, discountPercent: 18, gstRate: 5,
-    sku: "SPR-NEEM-1KG", stockQuantity: 120, weight: "1 kg", formType: "Granular",
-    rating: { average: 4.5, count: 89 },
-    specifications: { targetCrops: "All Crops", origin: "Cold-pressed Neem" },
-    usageGuide: { dosage: "50g/plant", method: "Soil application", precautions: "Mix well with soil" },
-    tags: ["organic", "neem"], isFeatured: true, isVisible: true, createdAt: "2026-05-20T00:00:00.000Z"
-  },
-  {
-    id: "p3",
-    name: "Seaweed Liquid Extract — Plant Growth Promoter",
-    slug: "seaweed-liquid-extract",
-    shortDescription: "Bio-stimulant for better root development and drought stress tolerance.",
-    description: "Full description...",
-    category: "Bio-Stimulants",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=500&q=80"],
-    price: 350, mrp: 400, discountPercent: 12, gstRate: 18,
-    sku: "SPR-SEAWEED-500ML", stockQuantity: 5, weight: "500 ml", formType: "Liquid",
-    rating: { average: 4.9, count: 210 },
-    specifications: { targetCrops: "All Crops", source: "Ascophyllum nodosum" },
-    usageGuide: { dosage: "2ml/liter", method: "Foliar spray / Drip", precautions: "Shake well before use" },
-    tags: ["seaweed", "growth"], isFeatured: true, isVisible: true, createdAt: "2026-06-01T00:00:00.000Z"
-  },
-  {
-    id: "p4",
-    name: "Humic Acid 98% Granules — Soil Conditioner",
-    slug: "humic-acid-98-granules",
-    shortDescription: "Improves soil structure, nutrient retention and microbial activity.",
-    description: "Full description...",
-    category: "Organic",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80"],
-    price: 520, mrp: 650, discountPercent: 20, gstRate: 5,
-    sku: "SPR-HUMIC-1KG", stockQuantity: 80, weight: "1 kg", formType: "Granular",
-    rating: { average: 4.7, count: 67 },
-    specifications: { purity: "98%", targetCrops: "Cotton, Wheat, Vegetables" },
-    usageGuide: { dosage: "2-3kg/acre", method: "Soil application", precautions: "Store in cool dry place" },
-    tags: ["humic", "soil"], isFeatured: true, isVisible: true, createdAt: "2026-06-05T00:00:00.000Z"
-  },
-  {
-    id: "p5",
-    name: "Trichoderma Viride Bio-Fungicide",
-    slug: "trichoderma-viride-bio-fungicide",
-    shortDescription: "Bio-control agent for soil-borne diseases and fungal pathogens.",
-    description: "Full description...",
-    category: "Bio-Stimulants",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=500&q=80"],
-    price: 280, mrp: 320, discountPercent: 12, gstRate: 18,
-    sku: "SPR-TRICHO-200G", stockQuantity: 40, weight: "200 g", formType: "Powder",
-    rating: { average: 4.6, count: 45 },
-    specifications: { cfu: "2×10^8 CFU/g", targetCrops: "Vegetables, Paddy, Pulses" },
-    usageGuide: { dosage: "5g/liter", method: "Seed treatment / Soil drench", precautions: "Don't mix with fungicides" },
-    tags: ["bio-fungicide", "trichoderma"], isFeatured: false, isVisible: true, createdAt: "2026-06-08T00:00:00.000Z"
-  },
-  {
-    id: "p6",
-    name: "Potassium Humate Flakes — Crop Booster",
-    slug: "potassium-humate-flakes",
-    shortDescription: "Enhances potassium availability and strengthens plant cell walls.",
-    description: "Full description...",
-    category: "Fertilizers",
-    brand: "SPR Biotech",
-    images: ["https://images.unsplash.com/photo-1628543105315-977ba2e0964c?w=500&q=80"],
-    price: 390, mrp: 450, discountPercent: 13, gstRate: 5,
-    sku: "SPR-KHUM-500G", stockQuantity: 60, weight: "500 g", formType: "Granular",
-    rating: { average: 4.4, count: 32 },
-    specifications: { potassium: "12%", targetCrops: "Sugarcane, Banana, Vegetables" },
-    usageGuide: { dosage: "1-2kg/acre", method: "Soil application / Drip", precautions: "Avoid contact with eyes" },
-    tags: ["potassium", "humate"], isFeatured: false, isVisible: true, createdAt: "2026-06-11T00:00:00.000Z"
-  },
-];
+// No mock data — all products come from Firestore in real time
 
 const REVIEWS = [
   {
@@ -341,14 +244,15 @@ function ProductSkeleton() {
 }
 
 export default function Home() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getProducts().then((fetched) => {
-      if (fetched.length > 0) setProducts(fetched);
+    const unsubscribe = subscribeToProducts((fetched) => {
+      setProducts(fetched);
       setLoading(false);
     });
+    return () => unsubscribe();
   }, []);
 
   const topProducts = [...products]

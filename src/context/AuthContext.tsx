@@ -1,23 +1,40 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { User, onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
 
-// The designated admin email — any user signing in with this address
-// is granted admin privileges automatically (no custom claim required).
-const ADMIN_EMAIL = "admin@gmail.com";
+// ─── Single source of truth for designated admin accounts ────────────────────
+export const DESIGNATED_ADMINS = ["admin@gmail.com", "arunpandimca@gmail.com"];
+
+// Cookie helpers — keeps cookie logic in one place
+function setCookie(name: string, value: string, maxAge: number) {
+  try {
+    document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Strict`;
+  } catch {
+    // Not in a browser context — safe to ignore
+  }
+}
+function clearCookie(name: string) {
+  try {
+    document.cookie = `${name}=; path=/; max-age=0; SameSite=Strict`;
+  } catch {}
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  firebaseReady: boolean;
+  signOutAdmin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isAdmin: false,
+  firebaseReady: false,
+  signOutAdmin: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -27,48 +44,84 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const signOutAdmin = async () => {
+    if (auth) await signOut(auth);
+    clearCookie("auth_token");
+    clearCookie("is_admin");
+  };
+
   useEffect(() => {
+    // ── If Firebase is not configured, stop loading immediately ───────────
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
+      return;
+    }
+
+    // ── Safety timeout: if onAuthStateChanged never fires, unblock after 5s ─
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      clearTimeout(timeout);
       setUser(currentUser);
 
       if (currentUser) {
-        // Grant admin if the email matches the designated admin account
-        if (currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-          setIsAdmin(true);
+        // ── Determine admin status ─────────────────────────────────────
+        let adminStatus = false;
+
+        const userEmail = currentUser.email?.toLowerCase() || "";
+        if (DESIGNATED_ADMINS.includes(userEmail)) {
+          adminStatus = true;
         } else {
-          // Otherwise check custom claims
           try {
             const idTokenResult = await currentUser.getIdTokenResult();
-            setIsAdmin(!!idTokenResult.claims.admin);
+            adminStatus = !!idTokenResult.claims.admin;
           } catch {
-            setIsAdmin(false);
+            adminStatus = false;
           }
         }
 
-        // Set cookie for middleware
+        setIsAdmin(adminStatus);
+
+        // ── Write cookies for edge middleware ─────────────────────────
         try {
           const token = await currentUser.getIdToken();
-          document.cookie = `auth_token=${token}; path=/; max-age=3600; SameSite=Strict`;
-        } catch {
-          // ignore cookie errors on server-side renders
-        }
-      } else {
-        setIsAdmin(false);
-        try {
-          document.cookie = `auth_token=; path=/; max-age=0; SameSite=Strict`;
+          setCookie("auth_token", token, 3600);
+          if (adminStatus) {
+            setCookie("is_admin", "true", 3600);
+          } else {
+            clearCookie("is_admin");
+          }
         } catch {
           // ignore
         }
+      } else {
+        // ── Logged out — clear everything ──────────────────────────────
+        setIsAdmin(false);
+        clearCookie("auth_token");
+        clearCookie("is_admin");
       }
 
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAdmin,
+        firebaseReady: isFirebaseConfigured,
+        signOutAdmin,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

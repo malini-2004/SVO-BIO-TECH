@@ -3,28 +3,11 @@
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getProductById } from "@/lib/firebase/products";
+import { subscribeToProduct } from "@/lib/firebase/products";
 import { Product } from "@/types";
 import { Star, ChevronRight, MessageCircle } from "lucide-react";
 
-const MOCK_PRODUCT: Product = {
-  id: "p1",
-  name: "SPR Premium NPK 19:19:19 Water Soluble Fertilizer",
-  slug: "spr-premium-npk-19-19-19",
-  shortDescription: "100% water-soluble fertilizer for all crops, promoting balanced growth.",
-  description: "SPR Premium NPK 19:19:19 is a 100% water-soluble fertilizer containing all three major plant nutrients (Nitrogen, Phosphorus, and Potassium) in equal proportion. Suitable for both foliar spraying and drip irrigation, it ensures rapid nutrient absorption, improves plant health, and delivers higher yield with better quality produce.",
-  category: "Fertilizers",
-  brand: "SPR Biotech",
-  images: [
-    "https://images.unsplash.com/photo-1628543105315-977ba2e0964c?w=800&q=80",
-  ],
-  price: 450, mrp: 600, discountPercent: 25, gstRate: 5,
-  sku: "SPR-NPK-191919-1KG", stockQuantity: 50, weight: "1 kg", formType: "Powder",
-  rating: { average: 4.8, count: 124 },
-  specifications: {},
-  usageGuide: { dosage: "", method: "", precautions: "" },
-  tags: [], isFeatured: true, isVisible: true, createdAt: new Date().toISOString(),
-};
+// Mock fallback removed — fetches live product data in real-time
 
 const MOCK_REVIEWS = [
   { id: "r1", userName: "Rajesh K.", rating: 5, comment: "Excellent product. Yield increased by 35% within two seasons. Highly recommend!", createdAt: "2026-05-10", avatar: "RK" },
@@ -40,22 +23,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedSize, setSelectedSize] = useState<string>("");
 
   useEffect(() => {
-    async function load() {
-      const fetched = await getProductById(id);
-      const p = fetched ?? { ...MOCK_PRODUCT, id };
-      setProduct(p);
-      
-      // Determine default selected size
-      const sizes = getAvailableSizes(p);
-      if (sizes.length > 0) {
-        // Try to match current product weight, e.g. "1 kg" -> "1kg"
-        const normalizedWeight = p.weight.toLowerCase().replace(/\s+/g, "");
-        const matched = sizes.find(s => s.toLowerCase() === normalizedWeight);
-        setSelectedSize(matched || sizes[0]);
+    const unsubscribe = subscribeToProduct(id, (p) => {
+      if (p) {
+        setProduct(p);
+        const sizes = getAvailableSizes(p);
+        if (sizes.length > 0) {
+          const normalizedWeight = p.weight.toLowerCase().replace(/\s+/g, "");
+          const matched = sizes.find(s => s.toLowerCase() === normalizedWeight);
+          setSelectedSize(matched || sizes[0]);
+        }
+      } else {
+        setProduct(null);
       }
       setLoading(false);
-    }
-    load();
+    });
+    return () => unsubscribe();
   }, [id]);
 
   function getAvailableSizes(p: Product): string[] {

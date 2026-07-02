@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
+import { initializeFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,12 +12,35 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase for SSR compatibility
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Check if real credentials are present (not placeholders or undefined)
+export const isFirebaseConfigured =
+  !!firebaseConfig.apiKey &&
+  firebaseConfig.apiKey !== "your_api_key_here" &&
+  !firebaseConfig.apiKey.startsWith("your_");
 
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
+let app: FirebaseApp = null as any;
+let auth: Auth = null as any;
+let db: Firestore = null as any;
+let storage: FirebaseStorage = null as any;
+let googleProvider: GoogleAuthProvider = null as any;
+
+if (isFirebaseConfigured) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+    storage = getStorage(app);
+    googleProvider = new GoogleAuthProvider();
+  } catch (e) {
+    console.error("[Firebase] Initialization error:", e);
+  }
+} else {
+  console.warn(
+    "[Firebase] Missing or placeholder credentials in .env.local. " +
+    "Authentication will be unavailable until real Firebase keys are provided."
+  );
+}
 
 export { app, auth, db, storage, googleProvider };

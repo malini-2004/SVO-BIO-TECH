@@ -19,6 +19,7 @@ export default function Header() {
   if (pathname?.startsWith("/admin")) return null;
 
   const navLinks = [
+    { href: "/", label: "Home" },
     { href: "/products", label: "Products" },
     { href: "/about", label: "About Us" },
   ];
@@ -94,13 +95,6 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            <Link
-              href="/admin/login"
-              className="flex items-center gap-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition"
-            >
-              <User size={16} />
-              Admin
-            </Link>
           </div>
 
           {/* Mobile Actions */}
@@ -174,13 +168,6 @@ export default function Header() {
                 {wishlistItems.length}
               </span>
             )}
-          </Link>
-          <Link
-            href="/admin/login"
-            className="mt-2 w-full text-center bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Admin Login
           </Link>
         </div>
       )}

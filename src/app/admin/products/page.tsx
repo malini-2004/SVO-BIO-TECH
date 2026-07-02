@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import {
-  collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
-} from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
 import { Product } from "@/types";
+import {
+  subscribeToAllProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  uploadProductImages,
+  deleteProductImage
+} from "@/lib/firebase/products";
 import {
   Plus, Search, Edit2, Trash2, X, Upload, Eye, EyeOff, Star,
   AlertTriangle, CheckCircle2, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+
+const MAX_IMAGES = 4;
 
 const CATEGORIES = ["Fertilizers", "Organic", "Bio-Stimulants", "Pesticides", "Seeds"];
 const FORM_TYPES: Product["formType"][] = ["Granular", "Liquid", "Powder"];
@@ -70,19 +76,24 @@ export default function AdminProductsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { fetchProducts(); }, []);
+  // Local image upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
-  async function fetchProducts() {
+  useEffect(() => {
     setLoading(true);
-    try {
-      const snap = await getDocs(collection(db, "products"));
-      setProducts(snap.docs.map((d) => ({ ...d.data(), id: d.id } as Product)));
-    } catch {
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  }
+    const unsubscribe = subscribeToAllProducts(
+      (fetched) => {
+        setProducts(fetched);
+        setLoading(false);
+      },
+      (err) => {
+        toast.error("Failed to load products");
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   function openAdd() {
     setForm(BLANK_FORM);
@@ -140,6 +151,69 @@ export default function AdminProductsPage() {
     });
   }
 
+  async function removeImageAt(idx: number) {
+    const urlToRemove = form.imageUrls[idx];
+    setForm((prev) => {
+      const urls = prev.imageUrls.filter((_, i) => i !== idx);
+      return { ...prev, imageUrls: urls.length ? urls : [""] };
+    });
+    
+    // Clean up from Firebase Storage if it's a storage URL
+    if (urlToRemove && urlToRemove.includes("firebasestorage.googleapis.com")) {
+      try {
+        await deleteProductImage(urlToRemove);
+      } catch (err) {
+        console.warn("Failed to delete removed image from storage:", err);
+      }
+    }
+  }
+
+  function openFilePicker() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const existingCount = form.imageUrls.filter((u) => u.trim() !== "").length;
+    const remainingSlots = MAX_IMAGES - existingCount;
+    if (remainingSlots <= 0) {
+      toast.error(`You can add up to ${MAX_IMAGES} images per product`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const selected = Array.from(files).slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      toast.error(`Only ${remainingSlots} more image(s) can be added (max ${MAX_IMAGES})`);
+    }
+
+    const invalid = selected.find((f) => !f.type.startsWith("image/"));
+    if (invalid) {
+      toast.error("Please select image files only");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const uploadedUrls = await uploadProductImages(selected);
+      setForm((prev) => {
+        const existing = prev.imageUrls.filter((u) => u.trim() !== "");
+        const combined = [...existing, ...uploadedUrls].slice(0, MAX_IMAGES);
+        return { ...prev, imageUrls: combined.length ? combined : [""] };
+      });
+      toast.success(`${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} uploaded`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload image(s). Ensure Storage CORS headers are configured.");
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.price || !form.mrp || !form.sku || !form.stockQuantity) {
@@ -182,14 +256,10 @@ export default function AdminProductsPage() {
       };
 
       if (editingId) {
-        await updateDoc(doc(db, "products", editingId), payload);
-        setProducts((prev) =>
-          prev.map((p) => (p.id === editingId ? { ...payload, id: editingId } as Product : p))
-        );
+        await updateProduct(editingId, payload);
         toast.success("Product updated successfully");
       } else {
-        const ref = await addDoc(collection(db, "products"), payload);
-        setProducts((prev) => [...prev, { ...payload, id: ref.id } as Product]);
+        await createProduct(payload);
         toast.success("Product added successfully");
       }
       setShowModal(false);
@@ -204,8 +274,8 @@ export default function AdminProductsPage() {
   async function handleDelete(id: string) {
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "products", id));
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      const productToDelete = products.find((p) => p.id === id);
+      await deleteProduct(id, productToDelete?.images);
       toast.success("Product deleted");
       setDeleteConfirmId(null);
     } catch {
@@ -217,10 +287,7 @@ export default function AdminProductsPage() {
 
   async function toggleVisibility(product: Product) {
     try {
-      await updateDoc(doc(db, "products", product.id), { isVisible: !product.isVisible });
-      setProducts((prev) =>
-        prev.map((p) => (p.id === product.id ? { ...p, isVisible: !p.isVisible } : p))
-      );
+      await updateProduct(product.id, { isVisible: !product.isVisible });
       toast.success(product.isVisible ? "Product hidden" : "Product published");
     } catch {
       toast.error("Failed to update visibility");
@@ -460,39 +527,75 @@ export default function AdminProductsPage() {
               <div>
                 <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">
                   <Upload size={12} className="inline mr-1" />
-                  Product Images (URLs)
+                  Product Images
                 </h3>
                 <div className="space-y-3">
+                  {/* Hidden native file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFilesSelected}
+                    className="hidden"
+                  />
+
+                  {/* Browse button */}
+                  <button
+                    type="button"
+                    onClick={openFilePicker}
+                    disabled={uploadingImages || form.imageUrls.filter((u) => u.trim() !== "").length >= MAX_IMAGES}
+                    className="w-full border-2 border-dashed border-gray-200 rounded-lg py-5 flex flex-col items-center justify-center gap-1.5 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploadingImages ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin text-primary-600" />
+                        <span className="text-xs font-semibold">Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={20} />
+                        <span className="text-xs font-semibold">Click to browse files from your computer</span>
+                        <span className="text-[10px] text-gray-400">PNG or JPG · up to {MAX_IMAGES} images</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Selected / existing images with thumbnail preview */}
                   {form.imageUrls.map((url, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => setImageUrl(idx, e.target.value)}
-                        className={INPUT_CLS}
-                        placeholder={`Image URL ${idx + 1} (Firebase Storage or Unsplash)`}
-                      />
-                      {idx > 0 && (
+                    url.trim() !== "" ? (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className="w-11 h-11 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 relative">
+                          <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-contain" />
+                        </div>
+                        <input
+                          type="url"
+                          value={url}
+                          onChange={(e) => setImageUrl(idx, e.target.value)}
+                          className={INPUT_CLS}
+                          placeholder={`Image URL ${idx + 1}`}
+                        />
                         <button
                           type="button"
-                          onClick={() => setForm((p) => ({ ...p, imageUrls: p.imageUrls.filter((_, i) => i !== idx) }))}
+                          onClick={() => removeImageAt(idx)}
                           className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0"
                         >
                           <X size={16} />
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : null
                   ))}
-                  {form.imageUrls.length < 4 && (
+
+                  {form.imageUrls.filter((u) => u.trim() !== "").length < MAX_IMAGES && (
                     <button
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, imageUrls: [...p.imageUrls, ""] }))}
+                      onClick={() => setForm((p) => ({ ...p, imageUrls: [...p.imageUrls.filter((u) => u.trim() !== ""), ""] }))}
                       className="text-xs text-primary-600 font-semibold hover:text-primary-800 transition flex items-center gap-1"
                     >
-                      <Plus size={13} /> Add another image URL
+                      <Plus size={13} /> Add image URL manually instead
                     </button>
                   )}
-                  <p className="text-xs text-gray-400">Paste Firebase Storage download URLs or public image URLs.</p>
+                  <p className="text-xs text-gray-400">Upload images directly from your computer, or paste an existing image URL.</p>
                 </div>
               </div>
 
@@ -697,7 +800,7 @@ export default function AdminProductsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploadingImages}
                   className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm"
                 >
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -718,7 +821,7 @@ export default function AdminProductsPage() {
             </div>
             <h3 className="text-xl font-black text-gray-900 mb-2">Delete Product?</h3>
             <p className="text-gray-500 text-sm mb-6">
-              This action cannot be undone. The product will be permanently removed from your store.
+              This action cannot be undone. The product and its stored images will be permanently removed from your store.
             </p>
             <div className="flex gap-3">
               <button

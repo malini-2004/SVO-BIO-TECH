@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { headers } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,11 +22,15 @@ export const metadata: Metadata = {
   description: "Premium Quality Fertilizer for Maximum Yield",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isAdminRoute = pathname.startsWith("/admin");
+
   return (
     <html
       lang="en"
@@ -34,11 +39,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          <Header />
+          {!isAdminRoute && <Header />}
           <main className="flex-grow">
             {children}
           </main>
-          <Footer />
+          {!isAdminRoute && <Footer />}
           <Toaster position="bottom-right" richColors />
         </AuthProvider>
       </body>

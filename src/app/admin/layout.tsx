@@ -5,12 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { LayoutDashboard, Package, ShoppingBag, MessageSquare, Settings, LogOut, Tag } from "lucide-react";
-import { auth } from "@/lib/firebase/config";
-import { signOut } from "firebase/auth";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, signOutAdmin } = useAuth();
   const router = useRouter();
 
   // ⚠️ /admin/login lives inside this layout — skip all checks to avoid infinite redirect loop
@@ -59,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOutAdmin();
     router.push("/admin/login");
   };
 
