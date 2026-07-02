@@ -26,11 +26,6 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-      {/* Top Bar */}
-      <div className="bg-primary-800 text-white text-center py-2 text-xs font-medium tracking-wide hidden sm:block">
-        100% Genuine Products &nbsp;|&nbsp; Call: +91 98765 43210
-      </div>
-
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}

@@ -179,7 +179,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">Head Office</p>
-                    <p className="text-gray-500 text-sm mt-0.5">123 Agri-Tech Park, Phase II,<br />Coimbatore, Tamil Nadu — 641004</p>
+                    <p className="text-gray-500 text-sm mt-0.5">405, Main Road, Boothapadi,<br />Anthiyur (TK), Erode (DT) — 638311</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -188,7 +188,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">Phone</p>
-                    <p className="text-gray-500 text-sm mt-0.5">+91 98765 43210 (Mon–Sat, 9am–6pm)</p>
+                    <p className="text-gray-500 text-sm mt-0.5">+91 99448 77999 (Mon–Sat, 9am–6pm)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -197,7 +197,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">Email</p>
-                    <p className="text-gray-500 text-sm mt-0.5">support@sprbiotech.com</p>
+                    <p className="text-gray-500 text-sm mt-0.5">svobiotech2010@gmail.com</p>
                   </div>
                 </div>
               </div>

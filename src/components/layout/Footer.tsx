@@ -53,15 +53,15 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex gap-3">
                 <MapPin className="text-primary-500 flex-shrink-0" size={20} />
-                <span className="text-gray-400 text-sm leading-tight">123 Agri-Tech Park, Phase II, Chennai, Tamil Nadu - 600100</span>
+                <span className="text-gray-400 text-sm leading-tight">405, Main Road, Boothapadi, Anthiyur (TK), Erode (DT) — 638311</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="text-primary-500 flex-shrink-0" size={20} />
-                <span className="text-gray-400 text-sm">+91 1800-123-4567</span>
+                <span className="text-gray-400 text-sm">+91 99448 77999</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="text-primary-500 flex-shrink-0" size={20} />
-                <span className="text-gray-400 text-sm">support@sprbiotech.com</span>
+                <span className="text-gray-400 text-sm">svobiotech2010@gmail.com</span>
               </li>
             </ul>
           </div>
