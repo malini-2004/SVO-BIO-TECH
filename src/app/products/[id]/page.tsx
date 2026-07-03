@@ -37,8 +37,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       setFormName("");
       setFormComment("");
       setFormRating(5);
+      alert("Thank you! Your review has been submitted and is pending admin approval.");
     } catch (err) {
       console.error(err);
+      alert("Failed to submit review.");
     } finally {
       setSubmittingReview(false);
     }
