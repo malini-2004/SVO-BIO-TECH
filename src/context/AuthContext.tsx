@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db, isFirebaseConfigured } from "@/lib/firebase/config";
 
 // ─── Single source of truth for designated admin accounts ────────────────────
 export const DESIGNATED_ADMINS = ["admin@gmail.com", "arunpandimca@gmail.com"];
@@ -71,14 +72,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         let adminStatus = false;
 
         const userEmail = currentUser.email?.toLowerCase() || "";
+
+        // 1. Check designated admins list (hardcoded super-admins)
         if (DESIGNATED_ADMINS.includes(userEmail)) {
           adminStatus = true;
         } else {
+          // 2. Check Firebase custom claims (set by Admin SDK when admin is created)
           try {
-            const idTokenResult = await currentUser.getIdTokenResult();
+            const idTokenResult = await currentUser.getIdTokenResult(true); // force-refresh
             adminStatus = !!idTokenResult.claims.admin;
           } catch {
             adminStatus = false;
+          }
+
+          // 3. Fallback: check Firestore users/{uid}.role === "admin"
+          //    This handles the case where the claim hasn't propagated yet.
+          if (!adminStatus && db) {
+            try {
+              const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+              if (userDoc.exists() && userDoc.data()?.role === "admin") {
+                adminStatus = true;
+              }
+            } catch {
+              // Firestore read failed — keep adminStatus as-is
+            }
           }
         }
 

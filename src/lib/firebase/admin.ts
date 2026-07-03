@@ -13,7 +13,7 @@ if (!admin.apps.length) {
     try {
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
           clientEmail,
           privateKey,
         }),

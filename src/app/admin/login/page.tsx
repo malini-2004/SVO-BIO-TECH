@@ -7,7 +7,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase/config";
 import { useAuth, DESIGNATED_ADMINS } from "@/context/AuthContext";
 import {
   ShieldCheck,
@@ -40,7 +41,7 @@ export default function AdminLoginPage() {
   useEffect(() => {
     if (errorParam === "unauthorized") {
       setError(
-        "Your account does not have administrator privileges. Please use valid admin credentials."
+        "Access Denied. Your account does not have administrator privileges. Please use valid admin credentials."
       );
     }
   }, [errorParam]);
@@ -57,7 +58,9 @@ export default function AdminLoginPage() {
     setError("");
 
     if (!auth) {
-      setError("Firebase is not configured. Please add your Firebase credentials to .env.local and restart the dev server.");
+      setError(
+        "Firebase is not configured. Please add your Firebase credentials to .env.local and restart the dev server."
+      );
       return;
     }
 
@@ -70,7 +73,7 @@ export default function AdminLoginPage() {
       } catch (signInErr: any) {
         const code = signInErr.code as string;
 
-        // Auto-seed: create account if it doesn't exist in Firebase yet and is in DESIGNATED_ADMINS
+        // Auto-seed: create account if it doesn't exist and is in DESIGNATED_ADMINS
         const isDesignated = DESIGNATED_ADMINS.includes(email.toLowerCase().trim());
         if (
           isDesignated &&
@@ -84,17 +87,42 @@ export default function AdminLoginPage() {
         }
       }
 
-      // Verify it is the admin account
-      const tokenResult = await credential.user.getIdTokenResult(true);
-      const isDesignated = DESIGNATED_ADMINS.includes(credential.user.email?.toLowerCase() || "");
+      const currentUser = credential.user;
+
+      // ── 1. Check designated admins list first ──────────────────────────────
+      const isDesignated = DESIGNATED_ADMINS.includes(
+        currentUser.email?.toLowerCase() || ""
+      );
+
+      // ── 2. Force-refresh token and check admin custom claim ────────────────
+      const tokenResult = await currentUser.getIdTokenResult(true);
       const hasAdminClaim = !!tokenResult.claims.admin;
 
-      if (!isDesignated && !hasAdminClaim) {
+      // ── 3. Fallback: check Firestore users/{uid}.role ──────────────────────
+      let hasFirestoreAdminRole = false;
+      if (!isDesignated && !hasAdminClaim && db) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists() && userDoc.data()?.role === "admin") {
+            hasFirestoreAdminRole = true;
+          }
+        } catch {
+          // Firestore unavailable — proceed without this check
+        }
+      }
+
+      const isAdminUser = isDesignated || hasAdminClaim || hasFirestoreAdminRole;
+
+      if (!isAdminUser) {
+        // Sign out the non-admin user
         await signOut(auth);
-        setError("Access denied. This account does not have admin privileges.");
+        setError(
+          "Access Denied. This account does not have administrator privileges. Please contact the system administrator."
+        );
         return;
       }
 
+      // Successful admin login — navigate to dashboard
       router.push(redirectTo);
     } catch (err: any) {
       const code = err.code as string;
@@ -103,9 +131,11 @@ export default function AdminLoginPage() {
         code === "auth/wrong-password" ||
         code === "auth/user-not-found"
       ) {
-        setError("Incorrect password or email. Please try again.");
+        setError("Incorrect email or password. Please try again.");
       } else if (code === "auth/too-many-requests") {
-        setError("Too many failed attempts. Your account is temporarily locked.");
+        setError(
+          "Too many failed attempts. Your account is temporarily locked. Please try again later."
+        );
       } else if (code === "auth/network-request-failed") {
         setError("Network error. Please check your internet connection.");
       } else {
@@ -143,7 +173,7 @@ export default function AdminLoginPage() {
                 Secure Portal
               </span>
             </div>
-            
+
             <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-lg">
               <Leaf size={32} className="text-white animate-pulse" />
             </div>
@@ -164,8 +194,8 @@ export default function AdminLoginPage() {
                   <p className="font-bold text-amber-800 mb-1 text-xs">Firebase Not Configured</p>
                   <p className="text-[11px] leading-relaxed text-amber-700">
                     Real Firebase credentials are required. Open{" "}
-                    <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">.env.local</code>,
-                    fill in your API keys, and restart the dev server.
+                    <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">.env.local</code>
+                    , fill in your API keys, and restart the dev server.
                   </p>
                 </div>
               </div>

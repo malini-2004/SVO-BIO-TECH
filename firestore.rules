@@ -2,46 +2,66 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    // ── Helper functions ──────────────────────────────────────────────────────
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    // Products: anyone can read, only admin can write
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ── Products: anyone can read, only admin can write ───────────────────────
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Orders: users can read/write their own orders, admins can read/write all
+    // ── Orders: users can read/write their own, admins can read/write all ─────
     match /orders/{orderId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read:   if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin();
     }
 
-    // Reviews: anyone can read approved reviews, users can create, admins can moderate
+    // ── Reviews: anyone can read approved reviews, users can create/edit own ──
     match /reviews/{reviewId} {
-      allow read: if resource.data.status == 'approved' || isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read:          if resource.data.status == 'approved' || isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create:        if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Blog posts: anyone can read published posts, admin can manage
+    // ── Blog posts: anyone can read published posts, admin can manage all ─────
     match /blog/{postId} {
-      allow read: if resource.data.status == 'published' || isAdmin();
+      allow read:  if resource.data.status == 'published' || isAdmin();
       allow write: if isAdmin();
     }
-    
-    // Coupons: anyone can read, only admin can write
+
+    // ── Coupons: anyone can read, only admin can write ────────────────────────
     match /coupons/{couponId} {
-      allow read: if true;
+      allow read:  if true;
       allow write: if isAdmin();
+    }
+
+    // ── Users: users can read/write their own profile, admins can read all ────
+    // This collection stores role information (role: "admin" | "user").
+    match /users/{userId} {
+      allow read:   if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Admin Users: only admins can read this collection (via Admin SDK too) ─
+    // The Admin SDK bypasses these rules, but client-side reads still need them.
+    match /adminUsers/{userId} {
+      allow read:  if isAdmin();
+      allow write: if false; // All writes go through the Admin SDK API route only
     }
   }
 }
