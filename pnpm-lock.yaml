@@ -18,7 +18,7 @@ importers:
         specifier: ^10.14.1
         version: 10.14.1
       firebase-admin:
-        specifier: ^12.1.1
+        specifier: ^12.7.0
         version: 12.7.0
       framer-motion:
         specifier: ^11.0.0
