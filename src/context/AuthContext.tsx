@@ -6,7 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "@/lib/firebase/config";
 
 // ─── Single source of truth for designated admin accounts ────────────────────
-export const DESIGNATED_ADMINS = ["admin@gmail.com", "arunpandimca@gmail.com"];
+export const DESIGNATED_ADMINS = ["admin@gmail.com", "nandhaorganics@gmail.com"];
 
 // Cookie helpers — keeps cookie logic in one place
 function setCookie(name: string, value: string, maxAge: number) {

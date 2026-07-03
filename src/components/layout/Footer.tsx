@@ -13,7 +13,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
           {/* Brand */}
           <div>
             <Link href="/" className="text-3xl font-black text-white tracking-tight flex items-center gap-2 mb-6">
@@ -39,14 +39,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Customer Service */}
-          <div>
-            <h4 className="text-lg font-bold mb-6">Customer Service</h4>
-            <ul className="space-y-3">
-              <li><Link href="/faq" className="text-gray-400 hover:text-primary-400 transition text-sm">FAQs</Link></li>
-            </ul>
-          </div>
-
           {/* Contact */}
           <div>
             <h4 className="text-lg font-bold mb-6">Contact Us</h4>
@@ -68,7 +60,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-500 text-sm">© {new Date().getFullYear()} SPR Biotech. All rights reserved.</p>
+          <p className="text-gray-500 text-sm">© {new Date().getFullYear()} SVO Biotech. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="text-gray-500 hover:text-gray-300 text-sm transition">Privacy Policy</Link>
             <Link href="/terms" className="text-gray-500 hover:text-gray-300 text-sm transition">Terms of Service</Link>

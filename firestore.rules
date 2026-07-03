@@ -11,13 +11,18 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
+<<<<<<< HEAD
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
     // ── Products: anyone can read, only admin can write ───────────────────────
+=======
+    // Products: anyone can read, only admin can write (except for updates, which are allowed for updating stats)
+>>>>>>> e85cb62a5443344a414368b3222d920cd6612f48
     match /products/{productId} {
       allow read: if true;
+      allow update: if true;
       allow write: if isAdmin();
     }
 
@@ -29,11 +34,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+<<<<<<< HEAD
     // ── Reviews: anyone can read approved reviews, users can create/edit own ──
     match /reviews/{reviewId} {
       allow read:          if resource.data.status == 'approved' || isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create:        if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+=======
+    // Reviews: anyone can read and submit reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+>>>>>>> e85cb62a5443344a414368b3222d920cd6612f48
     }
 
     // ── Blog posts: anyone can read published posts, admin can manage all ─────

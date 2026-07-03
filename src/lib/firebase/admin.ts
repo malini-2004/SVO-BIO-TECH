@@ -4,8 +4,8 @@ import * as admin from 'firebase-admin';
 // In development without one, skip initialization gracefully.
 if (!admin.apps.length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
   const isEmailConfigured = clientEmail && !clientEmail.startsWith("your_");
   const isKeyConfigured = privateKey && !privateKey.startsWith("your_") && !privateKey.startsWith('"your_');
 
@@ -24,7 +24,7 @@ if (!admin.apps.length) {
   } else {
     console.warn(
       'Firebase Admin SDK: FIREBASE_PRIVATE_KEY or FIREBASE_CLIENT_EMAIL not configured. ' +
-      'Server-side admin features (e.g. Razorpay webhook verification) will be unavailable.'
+      'Server-side admin features will be unavailable.'
     );
   }
 }

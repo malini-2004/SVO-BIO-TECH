@@ -15,7 +15,8 @@ async function verifyAdmin(request: Request): Promise<boolean> {
     const decoded = await adminAuth.verifyIdToken(token);
     const email = (decoded.email || "").toLowerCase();
     return !!decoded.admin || DESIGNATED_ADMINS.includes(email);
-  } catch {
+  } catch (error) {
+    console.error("verifyAdmin error:", error);
     return false;
   }
 }
@@ -58,8 +59,8 @@ export async function GET(request: Request) {
           uids.map((uid) => ({ uid }))
         );
         authUsers.forEach((u) => authUserMap.set(u.uid, u));
-      } catch {
-        // Non-fatal — lastLoginAt will just be null
+      } catch (err) {
+        console.error("Failed to batch fetch auth user metadata:", err);
       }
     }
 

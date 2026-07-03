@@ -88,7 +88,7 @@ export default function CartPage() {
                         <Link href={`/products/${item.product.id}`} className="font-bold text-gray-900 text-lg hover:text-primary-600 transition line-clamp-1">
                           {item.product.name}
                         </Link>
-                        <p className="text-sm text-gray-500 mt-1">{item.product.weight} • {item.product.formType}</p>
+                        <p className="text-sm text-gray-500 mt-1">{item.product.sizes?.join(", ") || item.product.weight || "—"}</p>
                         <p className="md:hidden font-bold text-primary-600 mt-2">₹{item.product.price}</p>
                       </div>
                     </div>
