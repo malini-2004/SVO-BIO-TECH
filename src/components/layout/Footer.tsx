@@ -13,7 +13,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
           {/* Brand */}
           <div>
             <Link href="/" className="text-3xl font-black text-white tracking-tight flex items-center gap-2 mb-6">
@@ -36,14 +36,6 @@ export default function Footer() {
               <li><Link href="/products" className="text-gray-400 hover:text-primary-400 transition text-sm">All Products</Link></li>
               <li><Link href="/about" className="text-gray-400 hover:text-primary-400 transition text-sm">About Us</Link></li>
               <li><Link href="/contact" className="text-gray-400 hover:text-primary-400 transition text-sm">Contact Support</Link></li>
-            </ul>
-          </div>
-
-          {/* Customer Service */}
-          <div>
-            <h4 className="text-lg font-bold mb-6">Customer Service</h4>
-            <ul className="space-y-3">
-              <li><Link href="/faq" className="text-gray-400 hover:text-primary-400 transition text-sm">FAQs</Link></li>
             </ul>
           </div>
 

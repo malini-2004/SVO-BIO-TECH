@@ -26,7 +26,7 @@ export default function AboutPage() {
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="container mx-auto px-4 max-w-7xl text-center text-white relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-green-200 text-sm font-medium px-4 py-2 rounded-full mb-6">
-            <Leaf size={15} /> Est. 2010 · Coimbatore, Tamil Nadu
+            <Leaf size={15} /> Est. 2010 · Erode, Tamil Nadu
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-5">
             Growing India,<br /><span className="text-green-300">One Farm at a Time</span>
@@ -109,8 +109,6 @@ export default function AboutPage() {
           {/* Checklist */}
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
             {[
-              "Government-approved under the Fertiliser Control Order",
-              "ISO 9001:2015 certified quality management",
               "Third-party lab tested for every batch",
               "Zero harmful chemicals in organic product range",
             ].map((point) => (
